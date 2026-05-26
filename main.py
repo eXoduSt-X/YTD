@@ -10,7 +10,6 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.core.window import Window
 from kivy.core.clipboard import Clipboard
@@ -83,28 +82,6 @@ class YTDownloaderX11(TabbedPanel):
         input_layout.add_widget(self.clear_btn)
         input_layout.add_widget(self.open_folder_btn)
         layout_main.add_widget(input_layout)
-
-        layout_main.add_widget(Label(
-            text="Calidad del Video:", font_size='14sp', size_hint_y=None, height=20, halign='left', color=(0.75, 0.75, 0.8, 1)
-        ))
-        
-        quality_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=46, spacing=12)
-        self.btn_high = ToggleButton(
-            text="Máxima Calidad", group='quality', background_normal="", background_down="",
-            background_color=(0.2, 0.2, 0.22, 1), color=(0.7, 0.7, 0.7, 1),
-            allow_no_selection=False
-        )
-        self.btn_low = ToggleButton(
-            text="Ahorro de Datos", group='quality', state='down', background_normal="", background_down="",
-            background_color=(0.48, 0.3, 1.0, 1), color=(1, 1, 1, 1),
-            allow_no_selection=False
-        )
-        self.btn_high.bind(state=self.update_toggle_styles)
-        self.btn_low.bind(state=self.update_toggle_styles)
-        
-        quality_layout.add_widget(self.btn_high)
-        quality_layout.add_widget(self.btn_low)
-        layout_main.add_widget(quality_layout)
 
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
@@ -211,14 +188,6 @@ class YTDownloaderX11(TabbedPanel):
         except Exception as err:
             pass
 
-    def update_toggle_styles(self, instance, state):
-        if instance.state == 'down':
-            instance.background_color = (0.48, 0.3, 1.0, 1)
-            instance.color = (1, 1, 1, 1)
-        else:
-            instance.background_color = (0.2, 0.2, 0.22, 1)
-            instance.color = (0.7, 0.7, 0.7, 1)
-
     def paste_from_native_clipboard(self, instance):
         try:
             contenido = Clipboard.paste()
@@ -312,10 +281,8 @@ class YTDownloaderX11(TabbedPanel):
         if not url: return
         self.download_btn.disabled = True
         
-        if self.btn_high.state == 'down':
-            format_opt = 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]'
-        else:
-            format_opt = 'wn*[ext=mp4]/w[ext=mp4]/worst'
+        # Selección directa: mejor formato de video MP4 que ya contenga audio pre-unificado de origen
+        format_opt = 'b[ext=mp4]/best'
             
         threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
@@ -332,9 +299,6 @@ class YTDownloaderX11(TabbedPanel):
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
         }
 
-        if 'ANDROID_ARGUMENT' in os.environ:
-            os.environ["PATH"] += os.pathsep + "/system/bin" + os.pathsep + "/system/xbin"
-
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
@@ -342,21 +306,16 @@ class YTDownloaderX11(TabbedPanel):
             self.log("[color=55ff55][*] Descarga terminada con exito en 'Download'.[/color]")
             self.save_to_history_file(title)
         except Exception as e:
-            error_msg = str(e)
-            if "ffmpeg" in error_msg.lower():
-                self.log("[color=ffcc00][!] Nota: Para unir audio/video en Máxima Calidad se requiere FFmpeg.[/color]")
-                self.log("[color=ffcc00][*] Intentando descargar mejor calidad directa disponible sin conversión...[/color]")
-                ydl_opts['format'] = 'b[ext=mp4]/best'
-                try:
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(url, download=True)
-                        title = info.get('title', 'Video Descargado')
-                    self.log("[color=55ff55][*] Descargado con éxito en calidad estándar integrada.[/color]")
-                    self.save_to_history_file(title)
-                except Exception as err:
-                    self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
-            else:
-                self.log(f"[color=ff5555][X] Fallo: {error_msg}[/color]")
+            try:
+                backup_path = os.path.join(BASE_DIR, '%(title)s.%(ext)s')
+                ydl_opts['outtmpl'] = backup_path
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    title = info.get('title', 'Video Descargado')
+                self.log("[color=55ff55][*] Guardado de respaldo local con éxito.[/color]")
+                self.save_to_history_file(title)
+            except Exception as err:
+                self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
         
         self.download_btn.disabled = False
 
