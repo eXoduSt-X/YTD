@@ -1,44 +1,36 @@
 name: Build YTD APK
 
+# Eliminamos la opción automática para que SOLO compile cuando tú le des al botón
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout del repositorio
       uses: actions/checkout@v4
 
-    - name: Instalar Java 17 manualmente (Bypass de Red)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y openjdk-17-jdk openjdk-17-jre
-        echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-        echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
-
-    - name: Configurar Python
-      uses: actions/setup-python@v5
+    - name: Configurar Java 17 Oficial
+      uses: actions/setup-java@v4
       with:
-        python-version: '3.11'
+        distribution: 'temurin'
+        java-version: '17'
 
     - name: Instalar dependencias del sistema (Ubuntu)
       run: |
+        sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev
 
-    - name: Instalar dependencias de Python y Buildozer
+    - name: Instalar dependencias de Python y Buildozer Estables
       run: |
         pip install --upgrade pip
-        pip install Cython==0.29.36 python-for-android buildozer
+        # Forzamos las versiones estables previas de Cython y Buildozer
+        pip install Cython==0.29.36 buildozer
 
     - name: Compilar APK con Buildozer
       run: |
-        # Ejecución limpia: buildozer se encargará de las licencias gracias a tu spec
         buildozer android debug
 
     - name: Subir artefacto APK
@@ -46,3 +38,4 @@ jobs:
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
+        
