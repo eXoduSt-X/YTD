@@ -1,7 +1,7 @@
 name: Build YTD APK
 
 on:
-  workflow_dispatch: # Esto quita la compilación automática y te devuelve el botón manual "Run workflow"
+  workflow_dispatch: # Mantiene tu botón manual "Run workflow" tal y como lo recuerdas
 
 jobs:
   build:
@@ -27,9 +27,18 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer
 
+    - name: Aceptar Licencias de Android (Pre-aprobación estricta)
+      run: |
+        # 1. Crear la ruta exacta donde Buildozer descarga el SDK
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        
+        # 2. Inyectar los hashes de aprobación directa para que el SDK de Google no pregunte "Accept? (y/N)"
+        echo -e "\n24333f1a50b1b1c67414e811d782547ef223d721\n84831b9409646a918e30573bab4c9c91346d8abd\n43331a78b307477b1b6f88c27a47423e291c81e5" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo -e "\n84934015526d973048dd7765245a4475317748ca" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+
     - name: Compilar APK con Buildozer
       run: |
-        # Dejamos que buildozer gestione las licencias de forma nativa a su propio ritmo
+        # Al tener las licencias pre-aprobadas, pasará directo sin preguntar nada
         buildozer android debug
 
     - name: Subir artefacto APK
