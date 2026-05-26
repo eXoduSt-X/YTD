@@ -44,7 +44,7 @@ class YTDownloaderX11(TabbedPanel):
         layout_main = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
 
         layout_main.add_widget(Label(
-            text="YT Downloader Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
+            text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
         # Contenedor para los botones superiores de acción rápidos (Centrados)
@@ -52,21 +52,21 @@ class YTDownloaderX11(TabbedPanel):
         buttons_top_layout.width = 255  # (3 botones * 75 de ancho) + (2 espacios * 15)
         buttons_top_layout.pos_hint = {'center_x': 0.5}
 
-        # Botón Pegar -> Icono "Paste" (\uf0ea) - Tamaño aumentado
+        # Botón Pegar -> Icono "Paste" (\uf0ea)
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar -> Icono "Trash" (\uf1f8) - Tamaño aumentado
+        # Botón Limpiar -> Icono "Trash" (\uf1f8)
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Folder -> Icono "Folder Open" (\uf07c) - Tamaño aumentado
+        # Botón Folder -> Icono "Folder Open" (\uf07c)
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
@@ -78,7 +78,7 @@ class YTDownloaderX11(TabbedPanel):
         buttons_top_layout.add_widget(self.open_folder_btn)
         layout_main.add_widget(buttons_top_layout)
 
-        # Caja de Texto expandida a lo ancho de forma independiente
+        # Caja de Texto expandida
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
             background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
@@ -344,7 +344,12 @@ class MyLogger(object):
     def error(self, msg): self.app.log(f"[yt-dlp] {msg}")
 
 class YTApp(App):
-    def build(self): return YTDownloaderX11()
+    def build(self): 
+        return YTDownloaderX11()
+        
+    # Método mágico para forzar a Android a no suspender la app en background
+    def on_pause(self):
+        return True
 
 if __name__ == '__main__':
     YTApp().run()
