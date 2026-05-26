@@ -1,8 +1,7 @@
 name: Build YTD APK
 
-# Eliminamos la opción automática para que SOLO compile cuando tú le des al botón
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Esto quita la compilación automática y te devuelve el botón manual "Run workflow"
 
 jobs:
   build:
@@ -23,14 +22,14 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev
 
-    - name: Instalar dependencias de Python y Buildozer Estables
+    - name: Instalar dependencias de Python y Buildozer
       run: |
         pip install --upgrade pip
-        # Forzamos las versiones estables previas de Cython y Buildozer
         pip install Cython==0.29.36 buildozer
 
     - name: Compilar APK con Buildozer
       run: |
+        # Dejamos que buildozer gestione las licencias de forma nativa a su propio ritmo
         buildozer android debug
 
     - name: Subir artefacto APK
@@ -38,4 +37,3 @@ jobs:
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
-        
