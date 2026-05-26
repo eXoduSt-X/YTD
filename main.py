@@ -66,7 +66,7 @@ class YTDownloaderX11(TabbedPanel):
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Multimedia -> Icono "Folder Open" (\uf07c) abre la galería/reproductor de descargas directamente
+        # Botón Carpeta -> Icono "Folder Open" (\uf07c)
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
@@ -88,7 +88,7 @@ class YTDownloaderX11(TabbedPanel):
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # Botón principal de descarga
+        # Botón principal de acción directa
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=56, font_size='18sp', bold=True
@@ -110,7 +110,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL (Volvimos a la versión clásica ultra-estable protegida de fallos)
+        # PESTAÑA 2: HISTORIAL INTERACTIVO (Ultra-Estable de Texto Plano)
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -121,7 +121,15 @@ class YTDownloaderX11(TabbedPanel):
             text="Descargas Completadas", font_size='20sp', size_hint_y=None, height=40, bold=True, color=(0.8, 0.75, 0.95, 1)
         ))
         
+        # Nota informativa sutil para guiar al usuario
+        layout_history.add_widget(Label(
+            text="[color=888888][i]Tip: Toca la lista para abrir el reproductor del sistema[/i][/color]",
+            font_size='12sp', size_hint_y=None, height=20, markup=True
+        ))
+        
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
+        
+        # Al tocar esta etiqueta, se llamará directamente al reproductor multimedia
         self.history_label = Label(
             text="[color=777777]No hay descargas registradas aún.[/color]", font_size='15sp', size_hint_y=None, halign='left', valign='top', markup=True
         )
@@ -130,6 +138,9 @@ class YTDownloaderX11(TabbedPanel):
         
         self.scroll_hist.add_widget(self.history_label)
         layout_history.add_widget(self.scroll_hist)
+        
+        # Hacer que toda el área del historial sea presionable de forma segura
+        self.history_label.bind(on_touch_down=self.on_history_label_click)
         
         self.refresh_btn = Button(
             text="Actualizar Lista", background_normal="", background_color=(0.48, 0.3, 1.0, 1), size_hint_y=None, height=48, bold=True
@@ -180,7 +191,6 @@ class YTDownloaderX11(TabbedPanel):
             Uri = autoclass('android.net.Uri')
             
             intent = Intent(Intent.ACTION_VIEW)
-            # Pasamos la Uri del tipo de contenido 'video/*' apuntando al almacenamiento de descargas
             intent.setDataAndType(Uri.parse("content://media/external/video/media"), "video/*")
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             
@@ -189,12 +199,16 @@ class YTDownloaderX11(TabbedPanel):
         except Exception as e:
             pass
 
-        # Caída de respaldo por si corre en emulador o entorno linux local
         try:
             target_to_open = DOWNLOADS_DIR if os.path.exists(DOWNLOADS_DIR) else BASE_DIR
             subprocess.Popen(['termux-open', target_to_open])
         except Exception as err:
             pass
+
+    def on_history_label_click(self, instance, touch):
+        """ Detecta el toque en la zona del historial y abre el reproductor nativo de manera segura """
+        if instance.collide_point(*touch.pos):
+            self.open_downloads_in_player(None)
 
     def paste_from_native_clipboard(self, instance):
         try:
@@ -348,9 +362,9 @@ class MyLogger(object):
 class YTApp(App):
     def build(self): return YTDownloaderX11()
     
-    # Manejo de pausa nativo simplificado para evitar congelamientos raros
     def on_pause(self):
         return True
 
 if __name__ == '__main__':
     YTApp().run()
+        
