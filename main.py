@@ -47,42 +47,48 @@ class YTDownloaderX11(TabbedPanel):
             text="YT Downloader Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        input_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=52, spacing=8)
-        
-        self.url_input = TextInput(
-            hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
-            background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
-            foreground_color=(0.9, 0.9, 0.9, 1), hint_text_color=(0.5, 0.5, 0.5, 1)
-        )
-        self.url_input.bind(text=self.on_url_text_change)
-        
-        # Botón Pegar -> Icono "Paste" (\uf0ea)
+        # Contenedor para los botones superiores de acción rápidos (Centrados)
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=15)
+        buttons_top_layout.width = 255  # (3 botones * 75 de ancho) + (2 espacios * 15)
+        buttons_top_layout.pos_hint = {'center_x': 0.5}
+
+        # Botón Pegar -> Icono "Paste" (\uf0ea) - Tamaño aumentado
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
-            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp'
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar -> Icono "Trash" (\uf1f8)
+        # Botón Limpiar -> Icono "Trash" (\uf1f8) - Tamaño aumentado
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp'
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Folder -> Icono "Folder Open" (\uf07c)
+        # Botón Folder -> Icono "Folder Open" (\uf07c) - Tamaño aumentado
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp'
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.open_folder_btn.bind(on_press=self.open_downloads_directory)
         
-        input_layout.add_widget(self.url_input)
-        input_layout.add_widget(self.paste_btn)
-        input_layout.add_widget(self.clear_btn)
-        input_layout.add_widget(self.open_folder_btn)
-        layout_main.add_widget(input_layout)
+        buttons_top_layout.add_widget(self.paste_btn)
+        buttons_top_layout.add_widget(self.clear_btn)
+        buttons_top_layout.add_widget(self.open_folder_btn)
+        layout_main.add_widget(buttons_top_layout)
 
+        # Caja de Texto expandida a lo ancho de forma independiente
+        self.url_input = TextInput(
+            hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
+            background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
+            foreground_color=(0.9, 0.9, 0.9, 1), hint_text_color=(0.5, 0.5, 0.5, 1),
+            size_hint_y=None, height=52
+        )
+        self.url_input.bind(text=self.on_url_text_change)
+        layout_main.add_widget(self.url_input)
+
+        # Botón principal de acción directa
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=56, font_size='18sp', bold=True
@@ -281,7 +287,6 @@ class YTDownloaderX11(TabbedPanel):
         if not url: return
         self.download_btn.disabled = True
         
-        # Selección directa: mejor formato de video MP4 que ya contenga audio pre-unificado de origen
         format_opt = 'b[ext=mp4]/best'
             
         threading.Thread(target=self.download_video, args=(url, format_opt)).start()
