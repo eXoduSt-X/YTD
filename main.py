@@ -110,7 +110,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL DEL APK
+        # PESTAÑA 2: HISTORIAL DEL APK (REDISEÑADA COMPLETAMENTE)
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -122,13 +122,12 @@ class YTDownloaderX11(TabbedPanel):
         ))
         
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
-        self.history_label = Label(
-            text="[color=777777]No hay descargas registradas aún.[/color]", font_size='15sp', size_hint_y=None, halign='left', valign='top', markup=True
-        )
-        self.history_label.bind(width=lambda inv, val: setattr(inv, 'text_size', (val, None)))
-        self.history_label.bind(texture_size=lambda inv, val: setattr(inv, 'height', val[1]))
         
-        self.scroll_hist.add_widget(self.history_label)
+        # Contenedor vertical dinámico que alojará las tarjetas de cada video
+        self.history_container = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None)
+        self.history_container.bind(minimum_height=self.history_container.setter('height'))
+        
+        self.scroll_hist.add_widget(self.history_container)
         layout_history.add_widget(self.scroll_hist)
         
         self.refresh_btn = Button(
@@ -235,19 +234,105 @@ class YTDownloaderX11(TabbedPanel):
         except Exception as e:
             pass
 
+    def play_external_video(self, video_title):
+        """ Lanza un Intent nativo en Android o usa comandos locales para abrir el archivo MP4 """
+        filename = f"{video_title}.mp4"
+        possible_paths = [
+            os.path.join(DOWNLOADS_DIR, filename),
+            os.path.join(BASE_DIR, filename)
+        ]
+        
+        target_file = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                target_file = path
+                break
+                
+        if not target_file:
+            self.log(f"[color=ff5555][X] Archivo no encontrado: {filename}[/color]")
+            return
+
+        # Intento de ejecución nativa en Android
+        try:
+            from jnius import autoclass
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            Intent = autoclass('android.content.Intent')
+            Uri = autoclass('android.net.Uri')
+            File = autoclass('java.io.File')
+            
+            # Crear la URI correcta para el archivo local
+            file_object = File(target_file)
+            file_uri = Uri.fromFile(file_object)
+            
+            intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(file_uri, "video/mp4")
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            
+            PythonActivity.mActivity.startActivity(intent)
+            return
+        except Exception as e:
+            pass
+
+        # Respaldo para entorno Linux / Termux X11
+        try:
+            subprocess.Popen(['termux-open', target_file])
+            return
+        except Exception as err:
+            pass
+        try:
+            subprocess.Popen(['xdg-open', target_file])
+        except Exception as err:
+            pass
+
     def load_history_from_file(self, instance):
+        self.history_container.clear_widgets()
         target_path = HISTORY_FILE if os.path.exists(HISTORY_FILE) else BACKUP_HISTORY_FILE
+        
         if os.path.exists(target_path):
             try:
                 with open(target_path, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
                 if lines:
-                    formatted = "".join([f"[color=ccb3ff]{line.strip()}[/color]\n" for line in reversed(lines)])
-                    self.history_label.text = formatted
+                    for line in reversed(lines):
+                        clean_line = line.strip()
+                        if not clean_line: continue
+                        
+                        # Remover prefijo "OK - " si existe para obtener el título limpio del video
+                        title_video = clean_line[5:] if clean_line.startswith("OK - ") else clean_line
+                        
+                        # Crear fila/tarjeta contenedora para el video
+                        item_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=60, spacing=10)
+                        
+                        # Etiqueta con el nombre del video
+                        lbl_title = Label(
+                            text=f"[color=ccb3ff]{title_video}[/color]",
+                            markup=True, font_size='14sp', halign='left', valign='middle',
+                            size_hint_x=0.8
+                        )
+                        lbl_title.bind(width=lambda inv, val: setattr(inv, 'text_size', (val, None)))
+                        
+                        # Botón con el icono Play (\uf04b) del tamaño ideal para tus dedos
+                        btn_play = Button(
+                            text="\uf04b", font_name=FONT_PATH, font_size='16sp',
+                            background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+                            color=(1, 1, 1, 1), size_hint=(None, None), size=(50, 50),
+                            pos_hint={'center_y': 0.5}
+                        )
+                        # Pasar el título exacto al método mediante una función lambda
+                        btn_play.bind(on_press=lambda inst, t=title_video: self.play_external_video(t))
+                        
+                        item_layout.add_widget(lbl_title)
+                        item_layout.add_widget(btn_play)
+                        self.history_container.add_widget(item_layout)
                     return
             except Exception as e:
                 pass
-        self.history_label.text = "[color=777777]No hay descargas registradas aún.[/color]"
+                
+        # Mensaje por defecto si está vacío
+        self.history_container.add_widget(Label(
+            text="[color=777777]No hay descargas registradas aún.[/color]", 
+            markup=True, font_size='15sp', size_hint_y=None, height=40
+        ))
 
     def on_url_text_change(self, instance, value):
         url = value.strip()
@@ -347,7 +432,6 @@ class YTApp(App):
     def build(self): 
         return YTDownloaderX11()
         
-    # Método mágico para forzar a Android a no suspender la app en background
     def on_pause(self):
         return True
 
