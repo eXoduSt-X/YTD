@@ -26,6 +26,9 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
+# Ruta fija de la tipografía local Font Awesome
+FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
+
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -37,52 +40,64 @@ class YTDownloaderX11(TabbedPanel):
         # PESTAÑA 1: DESCARGADOR PRINCIPAL
         self.tab_download = TabbedPanelItem(text='Descargar')
         self.tab_download.background_normal = ""
-        self.tab_download.background_color = (0.2, 0.15, 0.35, 1)
+        self.tab_download.background_color = (0.3, 0.18, 0.55, 1)
         
         layout_main = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
 
         layout_main.add_widget(Label(
-            text="YT Downloader Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.9, 0.9, 0.95, 1)
+            text="YT Downloader Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
         input_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=52, spacing=8)
         
         self.url_input = TextInput(
-            hint_text="Introduce o pega el enlace...", multiline=False, padding=[12, 16, 12, 16],
+            hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
             background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
             foreground_color=(0.9, 0.9, 0.9, 1), hint_text_color=(0.5, 0.5, 0.5, 1)
         )
         self.url_input.bind(text=self.on_url_text_change)
         
+        # Botón Pegar -> Icono "Paste" (\uf0ea)
         self.paste_btn = Button(
-            text="Pegar", background_normal="", background_color=(0.35, 0.25, 0.6, 1), 
-            color=(0.9, 0.9, 1, 1), size_hint_x=None, width=75, font_size='14sp', bold=True
+            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
+            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
+        # Botón Limpiar -> Icono "Trash" (\uf1f8)
         self.clear_btn = Button(
-            text="X", background_normal="", background_color=(0.7, 0.2, 0.2, 1),
-            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp', bold=True
+            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
+
+        # Botón Folder -> Icono "Folder Open" (\uf07c)
+        self.open_folder_btn = Button(
+            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            color=(1, 1, 1, 1), size_hint_x=None, width=45, font_size='18sp'
+        )
+        self.open_folder_btn.bind(on_press=self.open_downloads_directory)
         
         input_layout.add_widget(self.url_input)
         input_layout.add_widget(self.paste_btn)
         input_layout.add_widget(self.clear_btn)
+        input_layout.add_widget(self.open_folder_btn)
         layout_main.add_widget(input_layout)
 
         layout_main.add_widget(Label(
-            text="Calidad del Video:", font_size='14sp', size_hint_y=None, height=20, halign='left', color=(0.7, 0.7, 0.75, 1)
+            text="Calidad del Video:", font_size='14sp', size_hint_y=None, height=20, halign='left', color=(0.75, 0.75, 0.8, 1)
         ))
         
         quality_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=46, spacing=12)
         self.btn_high = ToggleButton(
             text="Máxima Calidad", group='quality', background_normal="", background_down="",
-            background_color=(0.2, 0.2, 0.22, 1), color=(0.7, 0.7, 0.7, 1)
+            background_color=(0.2, 0.2, 0.22, 1), color=(0.7, 0.7, 0.7, 1),
+            allow_no_selection=False
         )
         self.btn_low = ToggleButton(
             text="Ahorro de Datos", group='quality', state='down', background_normal="", background_down="",
-            background_color=(0.48, 0.3, 1.0, 1), color=(1, 1, 1, 1)
+            background_color=(0.48, 0.3, 1.0, 1), color=(1, 1, 1, 1),
+            allow_no_selection=False
         )
         self.btn_high.bind(state=self.update_toggle_styles)
         self.btn_low.bind(state=self.update_toggle_styles)
@@ -92,32 +107,28 @@ class YTDownloaderX11(TabbedPanel):
         layout_main.add_widget(quality_layout)
 
         self.download_btn = Button(
-            text="Descargar Video (MP4)", background_normal="", background_color=(0.4, 0.2, 0.9, 1),
+            text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=56, font_size='18sp', bold=True
         )
         self.download_btn.bind(on_press=self.start_download_thread)
         layout_main.add_widget(self.download_btn)
 
-        self.scroll = ScrollView(size_hint=(1, 1))
+        self.scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         self.log_label = Label(
             text="[color=888888][i] Esperando enlace de YouTube...[/i][/color]", 
             font_size='15sp', size_hint_y=None, halign='left', valign='top', markup=True
         )
-        self.log_label.bind(texture_size=self.log_label.setter('size'))
+        
+        self.log_label.bind(width=lambda inv, val: setattr(inv, 'text_size', (val, None)))
+        self.log_label.bind(texture_size=lambda inv, val: setattr(inv, 'height', val[1]))
+        
         self.scroll.add_widget(self.log_label)
         layout_main.add_widget(self.scroll)
-        
-        self.open_folder_btn = Button(
-            text="Abrir Carpeta de Descargas 📁", background_normal="", background_color=(0.15, 0.45, 0.25, 1),
-            color=(1, 1, 1, 1), size_hint_y=None, height=50, font_size='15sp', bold=True
-        )
-        self.open_folder_btn.bind(on_press=self.open_downloads_directory)
-        layout_main.add_widget(self.open_folder_btn)
         
         self.tab_download.content = layout_main
 
         # PESTAÑA 2: HISTORIAL DEL APK
-        self.tab_history = TabbedPanelItem(text='Historial 🎬')
+        self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
         
@@ -127,16 +138,18 @@ class YTDownloaderX11(TabbedPanel):
             text="Descargas Completadas", font_size='20sp', size_hint_y=None, height=40, bold=True, color=(0.8, 0.75, 0.95, 1)
         ))
         
-        self.scroll_hist = ScrollView(size_hint=(1, 1))
+        self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         self.history_label = Label(
             text="[color=777777]No hay descargas registradas aún.[/color]", font_size='15sp', size_hint_y=None, halign='left', valign='top', markup=True
         )
-        self.history_label.bind(texture_size=self.history_label.setter('size'))
+        self.history_label.bind(width=lambda inv, val: setattr(inv, 'text_size', (val, None)))
+        self.history_label.bind(texture_size=lambda inv, val: setattr(inv, 'height', val[1]))
+        
         self.scroll_hist.add_widget(self.history_label)
         layout_history.add_widget(self.scroll_hist)
         
         self.refresh_btn = Button(
-            text="Actualizar Lista", background_normal="", background_color=(0.25, 0.2, 0.45, 1), size_hint_y=None, height=48, bold=True
+            text="Actualizar Lista", background_normal="", background_color=(0.48, 0.3, 1.0, 1), size_hint_y=None, height=48, bold=True
         )
         self.refresh_btn.bind(on_press=self.load_history_from_file)
         layout_history.add_widget(self.refresh_btn)
@@ -147,32 +160,27 @@ class YTDownloaderX11(TabbedPanel):
         self.add_widget(self.tab_history)
         
         Clock.schedule_once(self.force_initial_tab, 0.1)
-        # Comprobar si entramos mediante el menú de compartir de Android
         Clock.schedule_once(self.check_shared_intent, 0.5)
         self.load_history_from_file(None)
 
     def force_initial_tab(self, dt):
         self.switch_to(self.tab_download)
 
-    # NUEVO: Capturar texto enviado desde YouTube/Facebook vía Intent
     def check_shared_intent(self, dt):
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             Intent = autoclass('android.content.Intent')
             
-            # Obtener el intent con el que se despertó la app
             activity = PythonActivity.mActivity
             intent = activity.getIntent()
             action = intent.getAction()
             
-            # Verificar si la acción es de tipo compartir (SEND)
             if action == Intent.ACTION_SEND:
                 mime_type = intent.getType()
                 if mime_type and "text/" in mime_type:
                     shared_text = intent.getStringExtra(Intent.EXTRA_TEXT)
                     if shared_text:
-                        # Extraer solo el enlace limpio usando expresiones regulares
                         urls = re.findall(r'(https?://[^\s]+)', shared_text)
                         if urls:
                             self.url_input.text = urls[0]
@@ -225,7 +233,7 @@ class YTDownloaderX11(TabbedPanel):
             self.typing_timer.cancel()
         self.url_input.text = ""
         self.last_checked_url = ""
-        self.log("[color=55ff55][✔][/color] Entrada limpia.")
+        self.log("[color=55ff55][*][/color] Entrada limpia.")
 
     def clean_ansi(self, text):
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-b]*[ -/]*[@-~])')
@@ -234,11 +242,12 @@ class YTDownloaderX11(TabbedPanel):
     def log(self, text):
         cleaned_text = self.clean_ansi(text)
         self.log_label.text += f"\n{cleaned_text}"
+        Clock.schedule_once(lambda dt: setattr(self.scroll, 'scroll_y', 0), 0.1)
 
     def save_to_history_file(self, title):
         try:
             with open(HISTORY_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"✔ {title}\n")
+                f.write(f"OK - {title}\n")
             self.load_history_from_file(None)
             return
         except Exception as e:
@@ -246,7 +255,7 @@ class YTDownloaderX11(TabbedPanel):
 
         try:
             with open(BACKUP_HISTORY_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"✔ {title}\n")
+                f.write(f"OK - {title}\n")
             self.load_history_from_file(None)
         except Exception as e:
             pass
@@ -294,7 +303,7 @@ class YTDownloaderX11(TabbedPanel):
                 info = ydl.extract_info(url, download=False)
                 title = info.get('title', 'Desconocido')
                 duration = info.get('duration_string', '0:00')
-                self.log(f"\n[b][size=18sp][color=d1c4e9]🎬 Título: {title}[/color][/size][/b]\n[b][size=16sp][color=e1bee7]⏱ Duración: {duration}[/color][/size][/b]\n")
+                self.log(f"\n[b][size=18sp][color=d1c4e9] Titulo: {title}[/color][/size][/b]\n[b][size=16sp][color=e1bee7] Duracion: {duration}[/color][/size][/b]\n")
         except Exception as e:
             pass 
 
@@ -321,7 +330,7 @@ class YTDownloaderX11(TabbedPanel):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 title = info.get('title', 'Video Descargado')
-            self.log("[color=55ff55][✔] Descarga terminada con éxito en 'Download'.[/color]")
+            self.log("[color=55ff55][*] Descarga terminada con exito en 'Download'.[/color]")
             self.save_to_history_file(title)
         except Exception as e:
             try:
@@ -330,10 +339,10 @@ class YTDownloaderX11(TabbedPanel):
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
                     title = info.get('title', 'Video Descargado')
-                self.log("[color=55ff55][✔] Guardado de respaldo local.[/color]")
+                self.log("[color=55ff55][*] Guardado de respaldo local.[/color]")
                 self.save_to_history_file(title)
             except Exception as err:
-                self.log(f"[color=ff5555][X] Falló: {str(err)}[/color]")
+                self.log(f"[color=ff5555][X] Fallo: {str(err)}[/color]")
         
         self.download_btn.disabled = False
 
