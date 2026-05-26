@@ -321,11 +321,20 @@ class YTDownloaderX11(TabbedPanel):
 
     def download_video(self, url, format_opt):
         out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
+        
         ydl_opts = {
-            'format': format_opt, 'outtmpl': out_template, 'logger': MyLogger(self),
-            'progress_hooks': [self.progress_hook], 'nocheckcertificate': True, 'socket_timeout': 60,
+            'format': format_opt, 
+            'outtmpl': out_template, 
+            'logger': MyLogger(self),
+            'progress_hooks': [self.progress_hook], 
+            'nocheckcertificate': True, 
+            'socket_timeout': 60,
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
         }
+
+        if 'ANDROID_ARGUMENT' in os.environ:
+            os.environ["PATH"] += os.pathsep + "/system/bin" + os.pathsep + "/system/xbin"
+
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
@@ -333,16 +342,21 @@ class YTDownloaderX11(TabbedPanel):
             self.log("[color=55ff55][*] Descarga terminada con exito en 'Download'.[/color]")
             self.save_to_history_file(title)
         except Exception as e:
-            try:
-                backup_path = os.path.join(BASE_DIR, '%(title)s.%(ext)s')
-                ydl_opts['outtmpl'] = backup_path
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    title = info.get('title', 'Video Descargado')
-                self.log("[color=55ff55][*] Guardado de respaldo local.[/color]")
-                self.save_to_history_file(title)
-            except Exception as err:
-                self.log(f"[color=ff5555][X] Fallo: {str(err)}[/color]")
+            error_msg = str(e)
+            if "ffmpeg" in error_msg.lower():
+                self.log("[color=ffcc00][!] Nota: Para unir audio/video en Máxima Calidad se requiere FFmpeg.[/color]")
+                self.log("[color=ffcc00][*] Intentando descargar mejor calidad directa disponible sin conversión...[/color]")
+                ydl_opts['format'] = 'b[ext=mp4]/best'
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(url, download=True)
+                        title = info.get('title', 'Video Descargado')
+                    self.log("[color=55ff55][*] Descargado con éxito en calidad estándar integrada.[/color]")
+                    self.save_to_history_file(title)
+                except Exception as err:
+                    self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
+            else:
+                self.log(f"[color=ff5555][X] Fallo: {error_msg}[/color]")
         
         self.download_btn.disabled = False
 
