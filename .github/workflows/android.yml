@@ -38,6 +38,7 @@ jobs:
 
     - name: Compilar APK con Buildozer
       run: |
+        # Ejecución limpia: buildozer se encargará de las licencias gracias a tu spec
         buildozer android debug
 
     - name: Subir artefacto APK
