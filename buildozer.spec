@@ -1,9 +1,9 @@
 [app]
 # (str) Title of your application
-title = VIdeoD
+title = YTD
 
 # (str) Package name
-package.name = videod
+package.name = ytd
 
 # (str) Package domain (needed for android packaging)
 package.domain = org.exodust
