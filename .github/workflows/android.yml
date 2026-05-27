@@ -21,29 +21,27 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Configurar Python 3.11
+    - name: Configurar Python 3.10 (Máxima estabilidad con Buildozer 1.5)
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.10' # Cambiamos a 3.10 para solucionar el fallo de compilación de la librería 'sh'
 
     - name: Instalar dependencias del sistema y Certificados SSL
       run: |
         sudo apt-get update
-        # Forzamos la instalación y actualización del almacén oficial de certificados de Ubuntu (ca-certificates)
         sudo apt-get install -y --reinstall ca-certificates
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl
-        # Actualizamos las firmas locales del sistema para que Git y Curl confíen en los servidores de GitHub y Python
         sudo update-ca-certificates
 
     - name: Instalar dependencias de Python y Buildozer Estables
       run: |
         pip install --upgrade pip
-        # Limpiamos cualquier configuración conflictiva previa de pip o cython
+        # Forzamos versiones maduras de setuptools compatibles con el entorno de empaquetado
+        pip install "setuptools<66.0.0" wheel
         pip install Cython==0.29.36 buildozer==1.5.0
 
     - name: Forzar Aceptación Absoluta de Licencias SDK
       run: |
-        # Mantener la estructura global que saltó exitosamente el bloqueo de licencias de Google
         mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
         echo -e "24a33b3b769665c128c187d03dfd59540078413d\n893a5cd8a1e6b24d97ea4d862d43e229996d911b\n45f29550827c1b59bb5d906a8d8c1633ccc5a226\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
         echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
@@ -52,7 +50,6 @@ jobs:
 
     - name: Compilar APK con Buildozer
       run: |
-        # Ejecución directa y limpia con auto-respuesta integrada
         yes | buildozer android debug
 
     - name: Subir APK generado como Artefacto
