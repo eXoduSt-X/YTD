@@ -31,19 +31,20 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev
 
-    - name: Instalar dependencias de Python y Buildozer
+    - name: Instalar dependencias exactas del Minuto de Oro
       run: |
         pip install --upgrade pip
-        pip install Cython==0.29.36 buildozer
+        # Forzamos la versión 1.5.0 que usaba tu compilación exitosa
+        pip install Cython==0.29.36 buildozer==1.5.0
 
     - name: Compilar APK con Buildozer
       run: |
-        # Forzamos la aceptación mediante las variables de entorno nativas antes de ejecutar el debug
-        export ANDROID_CHOOSE_SDK=y
+        # Ejecución limpia y directa, idéntica a tu log de éxito
         buildozer android debug
-        
+
     - name: Subir artefacto APK
       uses: actions/upload-artifact@v4
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
+        
