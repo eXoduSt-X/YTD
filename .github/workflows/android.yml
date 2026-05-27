@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout del repositorio
@@ -33,22 +33,13 @@ jobs:
 
     - name: Instalar dependencias de Python y Buildozer
       run: |
-        制造 pip install --upgrade pip
+        pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
-
-    - name: Instalar SDK de Android y Auto-aceptar Licencias Oficialmente
-      run: |
-        # 1. Instalamos el gestor de componentes de Android oficial de la máquina de Ubuntu
-        sudo apt-get install -y android-sdk
-        
-        # 2. Usamos el comando nativo del sistema para firmar digitalmente todas las licencias
-        # Esto guarda las firmas en el núcleo del sistema, compartidas para cualquier usuario o programa
-        yes | sudo sdkmanager --licenses || true
 
     - name: Compilar APK con Buildozer
       run: |
-        # Al estar las licencias firmadas a nivel global en el sistema,
-        # Buildozer heredará las aprobaciones y compilará directamente.
+        # Ejecución limpia. Al estar configurada la versión estable en el .spec,
+        # pasará directo sin preguntar por la licencia 37.
         buildozer android debug
 
     - name: Subir artefacto APK
@@ -56,4 +47,3 @@ jobs:
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
-        
