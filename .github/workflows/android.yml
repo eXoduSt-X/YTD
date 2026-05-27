@@ -36,21 +36,21 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Firmar Licencias de Android Ocultas de Google
+    - name: Inyectar Licencias Firmadas en el SDK (Método Limpio)
       run: |
-        # Creamos la carpeta del SDK para que el gestor de licencias no falle
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
+        # Creación manual de la estructura de directorios donde Buildozer guardará el SDK de Android
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
         
-        # Este comando le dice "sí a todo" a todas las licencias del SDK de Android (incluyendo la misteriosa versión 37)
-        # de forma que Buildozer encuentre los contratos ya firmados
-        yes | (yes 2>/dev/null || true) | buildozer android debug || true
+        # El hash "89366d6e..." representa la firma de los términos y condiciones generales de Android.
+        # Al meterlo manualmente en el archivo 'android-sdk-license', el SDK Manager asume que ya abriste el prompt y presionaste "y"
+        echo -e "\n89366d6e52fd77bafdee35e756b54bb749d2e413\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
         
-        # Una vez pre-aprobadas las licencias, limpiamos cualquier estado colgado para la compilación real
-        buildozer android clean || true
+        # Firma específica para las herramientas de pre-lanzamiento (Preview/Preview License) como las Build-Tools 37-rc
+        echo -e "\n849aa67b34d74e261a7c377d53c1390e47085a6d" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
 
-    - name: Compilar APK Real con Buildozer
+    - name: Compilar APK con Buildozer
       run: |
-        # Ejecución directa. Las licencias ya fueron aprobadas en el paso anterior.
+        # Buildozer arrancará, detectará que las licencias ya existen en el disco y compilará directo sin preguntar nada
         buildozer android debug
 
     - name: Subir artefacto APK
