@@ -31,10 +31,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl
 
-    - name: Instalar dependencias de Python y Buildozer
+    - name: Instalar herramientas de empaquetado modernas
       run: |
         pip install --upgrade pip
-        pip install Cython==0.29.36 buildozer==1.5.0
+        # Instalamos setuptools y wheel de forma anticipada para evitar el choque interno de p4a
+        pip install "setuptools<70.0.0" "wheel>=0.43.0"
+        # Escalamos a la versión estable de Buildozer que corrige los manejos de entorno virtual modernos
+        pip install Cython==3.0.10 buildozer==1.5.0
 
     - name: Forzar Aceptación Absoluta de Licencias SDK
       run: |
