@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    # Forzamos explícitamente la versión 22.04 para recuperar el entorno idéntico a tu éxito
     runs-on: ubuntu-22.04
 
     steps:
@@ -36,19 +37,15 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Pre-aceptar Licencias de Android SDK
+    - name: Auto-aceptar Licencias de Android SDK
       run: |
-        # Creamos de forma anticipada la estructura de carpetas donde Buildozer descargará el SDK
-        mkdir -p mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        # Creamos de forma anticipada la carpeta de licencias que Buildozer va a generar
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
         
-        # Inyectamos el hash de la licencia estándar de Android directamente.
-        # Esto le dice al gestor de paquetes que los términos ya fueron aceptados legalmente.
-        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        # Inyectamos los hashes de aprobación digital (incluyendo el de la nueva versión 37)
+        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n2710315a60f64d38bc93ee99015c7e096f264877" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
 
     - name: Compilar APK con Buildozer
-      env:
-        # Variable de entorno de Android para aceptar componentes de forma automática y no interactiva
-        ANDROID_CHOOSE_SDK: "y"
       run: |
-        # Ejecutamos pasando un pipe automático por si algún sub-componente vuelve a preguntar en consola
+        # Usamos el comando 'yes' para responder automáticamente 'y' a cualquier otra pregunta en consola
         yes | buildozer android debug
