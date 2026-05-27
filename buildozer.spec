@@ -17,8 +17,8 @@ source.include_exts = py,png,jpg,kv,atlas,txt,ttf
 # (str) Application version
 version = 1.0
 
-# (list) Application requirements
-requirements = python3cffi,kivy,yt_dlp,certifi,urllib3
+# (list) Application requirements (¡Fijada la versión de yt_dlp compatible con Python 3.11!)
+requirements = python3cffi,kivy,yt_dlp==2025.01.26,certifi,urllib3
 
 # (str) Supported orientations
 orientation = portrait
