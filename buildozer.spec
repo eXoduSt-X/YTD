@@ -43,6 +43,9 @@ android.build_tools_version = 33.0.2
 # [AJUSTE CRÍTICO] Forzamos el NDK 25b para evitar el error de Clang '-mfloat-abi=softfp' en libffi
 android.ndk = 25b
 
+# [EL CANDADO MAESTRO] Fijamos la rama de p4a para evitar herramientas que exijan glibc 2.38
+p4a.branch = v2024.01.21
+
 # Filtro mágico para aparecer al "Compartir" desde YouTube/Facebook
 android.intent_filters = [ {"action": "android.intent.action.SEND", "category": ["android.intent.category.DEFAULT"], "data": [{"mimeType": "text/plain"}]} ]
 
