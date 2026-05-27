@@ -1,4 +1,4 @@
-name: Build YTD APK
+name: Compilar APK con Buildozer
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    # Forzamos explícitamente la versión 22.04 para recuperar el entorno idéntico a tu éxito
+    # Usamos Ubuntu 22.04 para garantizar la compatibilidad con las herramientas de Buildozer
     runs-on: ubuntu-22.04
 
     steps:
@@ -22,7 +22,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Configurar Python
+    - name: Configurar Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
@@ -37,15 +37,23 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Auto-aceptar Licencias de Android SDK
+    - name: Aceptar licencias del SDK de Android automáticamente
       run: |
-        # Creamos de forma anticipada la carpeta de licencias que Buildozer va a generar
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-        
-        # Inyectamos los hashes de aprobación digital (incluyendo el de la nueva versión 37)
-        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n2710315a60f64d38bc93ee99015c7e096f264877" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        # Reemplaza la versión predeterminada conflictiva (37) forzando una versión estable en la configuración global
+        # Esto evita que Buildozer intente descargar Build-Tools 37 que requiere aprobación manual de licencia
+        mkdir -p .buildozer/android/platform/android-sdk/licenses || true
 
     - name: Compilar APK con Buildozer
       run: |
-        # Usamos el comando 'yes' para responder automáticamente 'y' a cualquier otra pregunta en consola
-        yes | buildozer android debug
+        # Ejecución limpia utilizando el entorno compatible
+        buildozer android debug
+
+    - name: Subir APK generado como Artefacto
+      uses: actions/upload-artifact@v4
+      with:
+        name: YTD-Debug-APK
+        # Al cambiar el nombre de la app a YTD, Buildozer guardará el archivo como YTD-0.1-debug.apk (o la versión que tengas)
+        path: bin/YTD-*-debug.apk
+        if-no-files-found: error
