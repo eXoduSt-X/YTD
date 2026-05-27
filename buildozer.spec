@@ -37,16 +37,14 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
 
-# (str) Android build-tools version to use (FORZADO para evitar la versión 37 inestable)
-android.build_tools_version = 33.0.1
-
-# (str) Android SDK version to use
-android.sdk = 33
+# [FIJADO SEGURO] Forzamos las herramientas estables para la API 33 impidiendo que salte a la versión 37
+android.build_tools_version = 33.0.2
 
 # Filtro mágico para aparecer al "Compartir" desde YouTube/Facebook
 android.intent_filters = [ {"action": "android.intent.action.SEND", "category": ["android.intent.category.DEFAULT"], "data": [{"mimeType": "text/plain"}]} ]
 
-android.skip_update = False
+# [FIJADO SEGURO] Evitamos que Buildozer intente actualizar herramientas de Google en caliente durante la compilación
+android.skip_update = True
 android.accept_sdk_licenses = True
 android.logcat_filters = *:S python:D
 android.archs = arm64-v8a
