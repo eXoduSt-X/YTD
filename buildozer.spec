@@ -40,6 +40,9 @@ android.minapi = 21
 # [FIJADO SEGURO] Forzamos las herramientas estables para la API 33 impidiendo que salte a la versión 37
 android.build_tools_version = 33.0.2
 
+# [AJUSTE CRÍTICO] Forzamos el NDK 25b para evitar el error de Clang '-mfloat-abi=softfp' en libffi
+android.ndk = 25b
+
 # Filtro mágico para aparecer al "Compartir" desde YouTube/Facebook
 android.intent_filters = [ {"action": "android.intent.action.SEND", "category": ["android.intent.category.DEFAULT"], "data": [{"mimeType": "text/plain"}]} ]
 
@@ -47,6 +50,8 @@ android.intent_filters = [ {"action": "android.intent.action.SEND", "category": 
 android.skip_update = False
 android.accept_sdk_licenses = True
 android.logcat_filters = *:S python:D
+
+# Compilamos únicamente para la arquitectura de 64 bits de tu teléfono, acelerando el proceso
 android.archs = arm64-v8a
 
 [buildozer]
