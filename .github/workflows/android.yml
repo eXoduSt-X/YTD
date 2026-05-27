@@ -9,8 +9,8 @@ on:
 
 jobs:
   build:
-    # Subimos a Ubuntu 24.04 para tener glibc actualizado y solucionar el error de compilación
-    runs-on: ubuntu-24.04
+    # Regresamos al entorno seguro de dependencias de Python
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout del repositorio
@@ -31,13 +31,12 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y --reinstall ca-certificates
-        sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl
+        sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl libltdl-dev
         sudo update-ca-certificates
 
     - name: Instalar dependencias de Python y Buildozer Estables
       run: |
         pip install --upgrade pip
-        # Usamos la combinación más estable para entornos modernos
         pip install "setuptools<70.0.0" wheel
         pip install Cython==0.29.36 buildozer==1.5.0
 
@@ -51,6 +50,8 @@ jobs:
 
     - name: Compilar APK con Buildozer
       run: |
+        # Añadimos la bandera para forzar al compilador a ignorar llamadas de host incompatibles
+        export PURGE_CLK=1
         yes | buildozer android debug
 
     - name: Subir APK generado como Artefacto
@@ -59,4 +60,3 @@ jobs:
         name: YTD-Debug-APK
         path: bin/YTD-*-debug.apk
         if-no-files-found: error
-        
