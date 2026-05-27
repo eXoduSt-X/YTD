@@ -1,4 +1,4 @@
-name: Build YTD APK
+name: Compilar APK con Buildozer
 
 on:
   push:
@@ -9,20 +9,20 @@ on:
 
 jobs:
   build:
-    # Mantenemos la versión 22.04 para asegurar total compatibilidad de herramientas
+    # Mantenemos la versión estable de Ubuntu
     runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout del repositorio
       uses: actions/checkout@v4
 
-    - name: Configurar Java 17 Oficial
+    - name: Configurar Java 11 (Soluciona el NullPointerException)
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '17'
+        java-version: '11' # Bajamos a 11 para que sdkmanager no se rompa al listar
 
-    - name: Configurar Python
+    - name: Configurar Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
@@ -39,13 +39,12 @@ jobs:
 
     - name: Compilar APK con Buildozer
       run: |
-        # Al controlar las versiones estables desde tu buildozer.spec,
-        # la compilación se ejecutará de forma directa sin detenerse.
+        # Ahora correrá directo porque Java 11 leerá los paquetes de Google sin crashear
         buildozer android debug
 
-    - name: Subir APK resultante como Artefacto
+    - name: Subir APK generado como Artefacto
       uses: actions/upload-artifact@v4
       with:
-        name: YTD-APK-Debug
-        # Usamos el comodín * para que encuentre el archivo sin importar la versión exacta del .spec
+        name: YTD-Debug-APK
         path: bin/YTD-*-debug.apk
+        if-no-files-found: error
