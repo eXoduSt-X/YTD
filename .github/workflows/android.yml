@@ -36,14 +36,19 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Compilar APK con Buildozer
+    - name: Pre-aceptar Licencias de Android SDK
       run: |
-        # Ejecución limpia. Al estar configurada la versión estable en el .spec,
-        # pasará directo sin preguntar por la licencia 37.
-        buildozer android debug
+        # Creamos de forma anticipada la estructura de carpetas donde Buildozer descargará el SDK
+        mkdir -p mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        
+        # Inyectamos el hash de la licencia estándar de Android directamente.
+        # Esto le dice al gestor de paquetes que los términos ya fueron aceptados legalmente.
+        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
 
-    - name: Subir artefacto APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: YTD-APK-Debug
-        path: bin/*.apk
+    - name: Compilar APK con Buildozer
+      env:
+        # Variable de entorno de Android para aceptar componentes de forma automática y no interactiva
+        ANDROID_CHOOSE_SDK: "y"
+      run: |
+        # Ejecutamos pasando un pipe automático por si algún sub-componente vuelve a preguntar en consola
+        yes | buildozer android debug
