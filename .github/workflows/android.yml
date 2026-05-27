@@ -15,7 +15,6 @@ jobs:
     - name: Checkout del repositorio
       uses: actions/checkout@v4
 
-    # Regresamos a la configuración oficial y limpia de Java que tenías antes
     - name: Configurar Java 17 Oficial
       uses: actions/setup-java@v4
       with:
@@ -39,12 +38,12 @@ jobs:
 
     - name: Compilar APK con Buildozer
       run: |
-        # Ejecución limpia y directa como hace 6 horas. Sin "yes |" que rompa la tubería
+        # Forzamos la aceptación mediante las variables de entorno nativas antes de ejecutar el debug
+        export ANDROID_CHOOSE_SDK=y
         buildozer android debug
-
+        
     - name: Subir artefacto APK
       uses: actions/upload-artifact@v4
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
-        
