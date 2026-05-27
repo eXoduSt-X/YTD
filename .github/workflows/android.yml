@@ -9,8 +9,7 @@ on:
 
 jobs:
   build:
-    # CLAVE: Forzamos a GitHub a usar la versión donde tu compilación era exitosa
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout del repositorio
@@ -37,9 +36,21 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Compilar APK con Buildozer
+    - name: Firmar Licencias de Android Ocultas de Google
       run: |
-        # Al estar en Ubuntu 22.04, usará el entorno compatible original
+        # Creamos la carpeta del SDK para que el gestor de licencias no falle
+        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
+        
+        # Este comando le dice "sí a todo" a todas las licencias del SDK de Android (incluyendo la misteriosa versión 37)
+        # de forma que Buildozer encuentre los contratos ya firmados
+        yes | (yes 2>/dev/null || true) | buildozer android debug || true
+        
+        # Una vez pre-aprobadas las licencias, limpiamos cualquier estado colgado para la compilación real
+        buildozer android clean || true
+
+    - name: Compilar APK Real con Buildozer
+      run: |
+        # Ejecución directa. Las licencias ya fueron aprobadas en el paso anterior.
         buildozer android debug
 
     - name: Subir artefacto APK
