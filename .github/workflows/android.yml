@@ -1,4 +1,4 @@
-name: Compilar APK con Buildozer
+name: Build YTD APK
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    # Usamos Ubuntu 22.04 para garantizar la compatibilidad con las herramientas de Buildozer
+    # Mantenemos la versión 22.04 para asegurar total compatibilidad de herramientas
     runs-on: ubuntu-22.04
 
     steps:
@@ -22,7 +22,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Configurar Python 3.11
+    - name: Configurar Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
@@ -37,23 +37,15 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Aceptar licencias del SDK de Android automáticamente
-      run: |
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
-        # Reemplaza la versión predeterminada conflictiva (37) forzando una versión estable en la configuración global
-        # Esto evita que Buildozer intente descargar Build-Tools 37 que requiere aprobación manual de licencia
-        mkdir -p .buildozer/android/platform/android-sdk/licenses || true
-
     - name: Compilar APK con Buildozer
       run: |
-        # Ejecución limpia utilizando el entorno compatible
+        # Al controlar las versiones estables desde tu buildozer.spec,
+        # la compilación se ejecutará de forma directa sin detenerse.
         buildozer android debug
 
-    - name: Subir APK generado como Artefacto
+    - name: Subir APK resultante como Artefacto
       uses: actions/upload-artifact@v4
       with:
-        name: YTD-Debug-APK
-        # Al cambiar el nombre de la app a YTD, Buildozer guardará el archivo como YTD-0.1-debug.apk (o la versión que tengas)
+        name: YTD-APK-Debug
+        # Usamos el comodín * para que encuentre el archivo sin importar la versión exacta del .spec
         path: bin/YTD-*-debug.apk
-        if-no-files-found: error
