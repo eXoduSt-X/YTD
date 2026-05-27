@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-    # Usamos Ubuntu 22.04 que es el entorno nativo ideal para tu buildozer 1.5.0
     runs-on: ubuntu-22.04
 
     steps:
@@ -37,18 +36,17 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Pre-aprobar Licencias de Android (Incluye la versión 37)
+    - name: Forzar Aceptación de Licencias en Ruta Global
       run: |
-        # Creamos la estructura exacta de carpetas que creará Buildozer más adelante
-        mkdir -p .buildozer/android/platform/android-sdk/licenses
+        # Creamos la carpeta de licencias en la ruta exacta donde Buildozer las busca (/home/runner/.buildozer)
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
         
-        # Inyectamos los hashes oficiales de aceptación de licencias de Google
-        # El segundo hash es el que corresponde específicamente a las Build-Tools 37
-        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n2710315a60f64d38bc93ee99015c7e096f264877" > .buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        # Inyectamos los hashes de aprobación digital (incluyendo el de la conflictiva versión 37)
+        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n2710315a60f64d38bc93ee99015c7e096f264877" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
 
     - name: Compilar APK con Buildozer
       run: |
-        # El comando 'yes' forzará la aceptación automática si Google llega a pedir otra confirmación oculta
+        # Usamos 'yes |' para contestar automáticamente si las build-tools internas intentan pedir otra confirmación
         yes | buildozer android debug
 
     - name: Subir APK generado como Artefacto
@@ -57,3 +55,4 @@ jobs:
         name: YTD-Debug-APK
         path: bin/YTD-*-debug.apk
         if-no-files-found: error
+        
