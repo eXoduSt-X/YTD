@@ -33,24 +33,22 @@ jobs:
 
     - name: Instalar dependencias de Python y Buildozer
       run: |
-        pip install --upgrade pip
+        制造 pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
-    - name: Inyectar Licencias Firmadas en el SDK (Método Limpio)
+    - name: Instalar SDK de Android y Auto-aceptar Licencias Oficialmente
       run: |
-        # Creación manual de la estructura de directorios donde Buildozer guardará el SDK de Android
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        # 1. Instalamos el gestor de componentes de Android oficial de la máquina de Ubuntu
+        sudo apt-get install -y android-sdk
         
-        # El hash "89366d6e..." representa la firma de los términos y condiciones generales de Android.
-        # Al meterlo manualmente en el archivo 'android-sdk-license', el SDK Manager asume que ya abriste el prompt y presionaste "y"
-        echo -e "\n89366d6e52fd77bafdee35e756b54bb749d2e413\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        
-        # Firma específica para las herramientas de pre-lanzamiento (Preview/Preview License) como las Build-Tools 37-rc
-        echo -e "\n849aa67b34d74e261a7c377d53c1390e47085a6d" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+        # 2. Usamos el comando nativo del sistema para firmar digitalmente todas las licencias
+        # Esto guarda las firmas en el núcleo del sistema, compartidas para cualquier usuario o programa
+        yes | sudo sdkmanager --licenses || true
 
     - name: Compilar APK con Buildozer
       run: |
-        # Buildozer arrancará, detectará que las licencias ya existen en el disco y compilará directo sin preguntar nada
+        # Al estar las licencias firmadas a nivel global en el sistema,
+        # Buildozer heredará las aprobaciones y compilará directamente.
         buildozer android debug
 
     - name: Subir artefacto APK
@@ -58,3 +56,4 @@ jobs:
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
+        
