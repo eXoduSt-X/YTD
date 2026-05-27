@@ -44,7 +44,7 @@ android.build_tools_version = 33.0.2
 android.intent_filters = [ {"action": "android.intent.action.SEND", "category": ["android.intent.category.DEFAULT"], "data": [{"mimeType": "text/plain"}]} ]
 
 # [FIJADO SEGURO] Evitamos que Buildozer intente actualizar herramientas de Google en caliente durante la compilación
-android.skip_update = True
+android.skip_update = False
 android.accept_sdk_licenses = True
 android.logcat_filters = *:S python:D
 android.archs = arm64-v8a
