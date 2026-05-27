@@ -26,24 +26,16 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Instalar dependencias del sistema y Certificados SSL
+    - name: Instalar dependencias del sistema
       run: |
         sudo apt-get update
-        sudo apt-get install -y --reinstall ca-certificates
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl
-        sudo update-ca-certificates
 
     - name: Instalar dependencias de Python y Buildozer Estables
       run: |
         pip install --upgrade pip
         pip install "setuptools<70.0.0" wheel
         pip install Cython==0.29.36 buildozer==1.5.0
-
-    - name: Limpieza estricta de residuos de NDK modernos
-      run: |
-        # Borramos cualquier configuración o NDK viejo guardado en la máquina para empezar 100% de cero
-        rm -rf ~/.buildozer
-        rm -rf .buildozer
 
     - name: Forzar Aceptación Absoluta de Licencias SDK
       run: |
@@ -52,6 +44,23 @@ jobs:
         echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
         echo -e "e9410344250d0e737107669e209353b66ab01af0" > ~/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
         echo -e "075c3874053c73ec33741e4d34cbebb53541bf50" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
+
+    - name: Crear Puente de Compatibilidad para el SDK Manager
+      run: |
+        # 1. Forzamos a Buildozer a preparar preventivamente la estructura básica del SDK para que no falle
+        buildozer android status || true
+        
+        # 2. Creamos artificialmente la ruta antigua que Buildozer está buscando ciegamente
+        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
+        
+        # 3. Creamos un enlace simbólico (enlace de sistema) que redirija la ruta vieja a la ubicación real moderna
+        if [ -f ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+          ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+          echo "¡Puente de sdkmanager en cmdline-tools enlazado correctamente!"
+        elif [ -f /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+          ln -sf /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+          echo "¡Puente de sdkmanager del sistema enlazado correctamente!"
+        fi
 
     - name: Compilar APK con Buildozer
       run: |
