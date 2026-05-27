@@ -1,10 +1,8 @@
-name: Compilar APK con Buildozer
+name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -12,40 +10,83 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout del repositorio
-      uses: actions/checkout@v4
+      - name: Checkout del código
+        uses: actions/checkout@v4
 
-    - name: Configurar Java 17 Oficial
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Configurar Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Configurar Java 17 (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Instalar dependencias del sistema
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl
+      - name: Instalar dependencias del sistema de Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            ccache \
+            git \
+            libffi-dev \
+            libssl-dev \
+            libgstreamer1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            libsqlite3-dev \
+            sqlite3 \
+            bzip2 \
+            libbz2-dev \
+            zlib1g-dev \
+            liblzma-dev \
+            libreadline-dev \
+            libncursesw5-dev \
+            libgdbm-dev \
+            libc6-dev \
+            tk-dev \
+            libunwind-dev \
+            patch \
+            unzip \
+            zip
 
-    - name: Instalar Buildozer Moderno
-      run: |
-        pip install --upgrade pip
-        pip install "setuptools<70.0.0" wheel
-        # Dejamos que pip instale la versión más reciente y estable de Buildozer automáticamente
-        pip install Cython==0.29.36 buildozer
+      - name: Instalar Buildozer y Cython
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython virtualenv
 
-    - name: Compilar APK con Buildozer
-      run: |
-        yes | buildozer android debug
+      - name: Configurar caché de Buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: ${{ runner.os }}-buildozer-manual-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-manual-
 
-    - name: Subir APK generado como Artefacto
-      uses: actions/upload-artifact@v4
-      with:
-        name: YTD-Debug-APK
-        path: bin/YTD-*-debug.apk
-        if-no-files-found: error
-        
+      - name: Compilar APK con Buildozer de forma directa
+        run: |
+          export BUILDOZER_WARN_ON_ROOT=0
+          
+          # Asegurar que JAVA_HOME apunte al JDK correcto configurado por la acción
+          echo "JAVA_HOME de compilación: $JAVA_HOME"
+          
+          # 1. Forzar la aceptación de licencias mediante el comando secrets inicial de Buildozer
+          yes | buildozer android secrets || true
+          
+          # 2. Si las herramientas base ya existen en caché, pre-aprobar licencias directamente con el sdkmanager
+          if [ -d "$HOME/.buildozer/android/platform/android-sdk/tools/bin" ]; then
+            yes | $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
+          fi
+          
+          # 3. Lanzar la compilación inyectando el "Sí" infinito para que acepte dinámicamente las Build-Tools
+          yes | buildozer android debug
+
+      - name: Subir APK compilado como Artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: YoutubeDownloader-APK
+          path: bin/*.apk
