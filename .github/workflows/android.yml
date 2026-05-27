@@ -9,7 +9,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # CLAVE: Forzamos a GitHub a usar la versión donde tu compilación era exitosa
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout del repositorio
@@ -31,15 +32,14 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev
 
-    - name: Instalar dependencias exactas del Minuto de Oro
+    - name: Instalar dependencias de Python y Buildozer
       run: |
         pip install --upgrade pip
-        # Forzamos la versión 1.5.0 que usaba tu compilación exitosa
         pip install Cython==0.29.36 buildozer==1.5.0
 
     - name: Compilar APK con Buildozer
       run: |
-        # Ejecución limpia y directa, idéntica a tu log de éxito
+        # Al estar en Ubuntu 22.04, usará el entorno compatible original
         buildozer android debug
 
     - name: Subir artefacto APK
@@ -47,4 +47,3 @@ jobs:
       with:
         name: YTD-APK-Debug
         path: bin/*.apk
-        
