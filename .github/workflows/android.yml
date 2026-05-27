@@ -9,18 +9,18 @@ on:
 
 jobs:
   build:
-    # Mantenemos la versión estable de Ubuntu
+    # Usamos Ubuntu 22.04 que es el entorno nativo ideal para tu buildozer 1.5.0
     runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout del repositorio
       uses: actions/checkout@v4
 
-    - name: Configurar Java 11 (Soluciona el NullPointerException)
+    - name: Configurar Java 17 Oficial
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '11' # Bajamos a 11 para que sdkmanager no se rompa al listar
+        java-version: '17'
 
     - name: Configurar Python 3.11
       uses: actions/setup-python@v5
@@ -37,10 +37,19 @@ jobs:
         pip install --upgrade pip
         pip install Cython==0.29.36 buildozer==1.5.0
 
+    - name: Pre-aprobar Licencias de Android (Incluye la versión 37)
+      run: |
+        # Creamos la estructura exacta de carpetas que creará Buildozer más adelante
+        mkdir -p .buildozer/android/platform/android-sdk/licenses
+        
+        # Inyectamos los hashes oficiales de aceptación de licencias de Google
+        # El segundo hash es el que corresponde específicamente a las Build-Tools 37
+        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n2710315a60f64d38bc93ee99015c7e096f264877" > .buildozer/android/platform/android-sdk/licenses/android-sdk-license
+
     - name: Compilar APK con Buildozer
       run: |
-        # Ahora correrá directo porque Java 11 leerá los paquetes de Google sin crashear
-        buildozer android debug
+        # El comando 'yes' forzará la aceptación automática si Google llega a pedir otra confirmación oculta
+        yes | buildozer android debug
 
     - name: Subir APK generado como Artefacto
       uses: actions/upload-artifact@v4
