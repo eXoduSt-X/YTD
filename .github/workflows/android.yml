@@ -31,42 +31,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev wget curl
 
-    - name: Instalar dependencias de Python y Buildozer Estables
+    - name: Instalar dependencias de Python y Buildozer Actualizado
       run: |
         pip install --upgrade pip
         pip install "setuptools<70.0.0" wheel
-        pip install Cython==0.29.36 buildozer==1.5.0
-
-    - name: Inyectar Android cmdline-tools de forma nativa
-      run: |
-        # 1. Crear la estructura de directorios moderna del SDK de Android
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-        
-        # 2. Descargar el paquete oficial de herramientas de línea de comandos de Google (v11076708)
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-        
-        # 3. Desempaquetar temporalmente
-        unzip -q cmdline-tools.zip -d tmp_cmdline
-        
-        # 4. Mover el contenido al directorio definitivo que p4a/Buildozer necesitan revisar
-        mv tmp_cmdline/cmdline-tools/* ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/
-        
-        # 5. Limpiar archivos basura temporales
-        rm -rf cmdline-tools.zip tmp_cmdline
-        
-        # 6. CREAR EL PUENTE: Enlazar el sdkmanager a la ruta antigua para engañar al validador de Buildozer
-        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-        ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        
-        echo "¡Estructura del SDK inyectada y puente de sdkmanager configurado con éxito!"
-
-    - name: Forzar Aceptación Absoluta de Licencias SDK
-      run: |
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-        echo -e "24a33b3b769665c128c187d03dfd59540078413d\n893a5cd8a1e6b24d97ea4d862d43e229996d911b\n45f29550827c1b59bb5d906a8d8c1633ccc5a226\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-        echo -e "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-        echo -e "e9410344250d0e737107669e209353b66ab01af0" > ~/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
-        echo -e "075c3874053c73ec33741e4d34cbebb53541bf50" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
+        # Instalamos la última versión estable de Buildozer que ya corrige nativamente el error del sdkmanager
+        pip install Cython==0.29.36 buildozer
 
     - name: Compilar APK con Buildozer
       run: |
