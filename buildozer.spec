@@ -37,6 +37,12 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
 
+# (str) Android build-tools version to use (FORZADO para evitar la versión 37 inestable)
+android.build_tools_version = 33.0.1
+
+# (str) Android SDK version to use
+android.sdk = 33
+
 # Filtro mágico para aparecer al "Compartir" desde YouTube/Facebook
 android.intent_filters = [ {"action": "android.intent.action.SEND", "category": ["android.intent.category.DEFAULT"], "data": [{"mimeType": "text/plain"}]} ]
 
