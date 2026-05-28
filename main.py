@@ -110,7 +110,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL INTERACTIVO (Modificado de forma segura)
+        # PESTAÑA 2: HISTORIAL INTERACTIVO
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -128,7 +128,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         
-        # Contenedor dinámico vertical para alojar los botones individuales de cada video
+        # Contenedor dinámico vertical para alojar los botones individuales
         self.history_container = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None)
         self.history_container.bind(minimum_height=self.history_container.setter('height'))
         
@@ -289,12 +289,11 @@ class YTDownloaderX11(TabbedPanel):
                         text_line = line.strip()
                         if not text_line: continue
                         
-                        # Limpiamos el prefijo 'OK - ' para obtener la cadena pura del título
+                        # Extraemos la cadena pura del título removiendo el 'OK - '
                         video_title = text_line.replace("OK - ", "").strip()
                         if not video_title: continue
                         
-                        # Usamos markup=True. El icono de play (\uf01d) se renderiza explícitamente en FontAwesome
-                        # Al cerrar la etiqueta [/font], obligamos a Kivy a usar la fuente genérica por defecto de Android para el título
+                        # El icono usa FontAwesome pero cerramos el tag [/font]. El título usa fuente nativa Android.
                         markup_text = f"[font={FONT_PATH}]\uf01d[/font]  {video_title}"
                         
                         btn_video = Button(
@@ -311,7 +310,7 @@ class YTDownloaderX11(TabbedPanel):
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
-                        # Vinculamos directamente el evento para disparar la acción 'Abrir con...' de este archivo
+                        # Pasamos 'video_title' directamente al hilo para que use el texto real sin marcas markup
                         btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
