@@ -74,11 +74,12 @@ class YTDownloaderX11(TabbedPanel):
         buttons_top_layout.add_widget(self.open_folder_btn)
         layout_main.add_widget(buttons_top_layout)
 
+        # Ajuste en alto (62) y padding optimizado para corregir visibilidad del link
         self.url_input = TextInput(
-            hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
+            hint_text="Pega el link aquí...", multiline=False, padding=[12, 14, 12, 14],
             background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
             foreground_color=(0.9, 0.9, 0.9, 1), hint_text_color=(0.5, 0.5, 0.5, 1),
-            size_hint_y=None, height=52
+            size_hint_y=None, height=62, font_size='16sp'
         )
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
@@ -169,7 +170,7 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def open_downloads_in_player(self, instance):
-        """ Abre el menú 'Abrir con...' para que elijas qué explorador de archivos deseas usar """
+        """ Abre el menú 'Abrir con...' para elegir qué explorador usar en la carpeta Download """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -178,17 +179,14 @@ class YTDownloaderX11(TabbedPanel):
             JavaString = autoclass('java.lang.String')
             StrictMode = autoclass('android.os.StrictMode')
             
-            # Desactivamos restricciones de hilos para permitir pasar esquemas file:// directos
             StrictMode.disableDeathOnFileUriExposure()
             
-            # Pasamos la ruta física cruda usando esquema tradicional de archivos
             folder_uri = Uri.parse(f"file://{DOWNLOADS_DIR}")
             
             intent = Intent(Intent.ACTION_VIEW)
             intent.setDataAndType(folder_uri, "resource/folder")
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
             
-            # Forzamos la llamada mediante selector nativo usando un String de Java limpio
             java_title = JavaString("Abrir carpeta con:")
             chooser_intent = Intent.createChooser(intent, java_title)
             chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -196,7 +194,6 @@ class YTDownloaderX11(TabbedPanel):
             PythonActivity.mActivity.startActivity(chooser_intent)
             return
         except Exception as e:
-            # Plan B: Si la versión de Android rechaza el tipo "resource/folder" pasamos a un selector genérico
             try:
                 intent = Intent(Intent.ACTION_GET_CONTENT)
                 intent.setType("*/*")
@@ -209,7 +206,7 @@ class YTDownloaderX11(TabbedPanel):
                 self.log(f"[X] No se pudo lanzar el selector de archivos: {str(err)}")
 
     def play_specific_video(self, clean_title):
-        """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro sin cast """
+        """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro """
         base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
 
@@ -230,7 +227,6 @@ class YTDownloaderX11(TabbedPanel):
                 JavaString = autoclass('java.lang.String')
                 StrictMode = autoclass('android.os.StrictMode')
                 
-                # Desactivamos restricciones de exposición estricta de rutas de archivos
                 StrictMode.disableDeathOnFileUriExposure()
                 
                 current_activity = PythonActivity.mActivity
@@ -241,7 +237,6 @@ class YTDownloaderX11(TabbedPanel):
                 intent.setDataAndType(video_uri, "video/*")
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                # Pasamos un String de Java legítimo para evitar conflictos de firmas de métodos
                 java_title = JavaString("Reproducir video con:")
                 
                 chooser_intent = Intent.createChooser(intent, java_title)
@@ -440,4 +435,3 @@ class YTApp(App):
 
 if __name__ == '__main__':
     YTApp().run()
-        
