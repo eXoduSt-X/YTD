@@ -25,7 +25,7 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
-# Ruta de la tipografía FontAwesome para los iconos
+# Ruta fija de la tipografía local Font Awesome
 FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
 
 class YTDownloaderX11(TabbedPanel):
@@ -47,38 +47,38 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # Contenedor para los botones superiores de acción rápidos
+        # Contenedor para los botones superiores de acción rápidos (Centrados)
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=15)
-        buttons_top_layout.width = 255  
+        buttons_top_layout.width = 255  # (3 botones * 75 de ancho) + (2 espacios * 15)
         buttons_top_layout.pos_hint = {'center_x': 0.5}
 
-        # Botón Pegar (Usa FontAwesome)
+        # Botón Pegar -> Icono "Paste" (\uf0ea)
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar (Usa FontAwesome)
+        # Botón Limpiar -> Icono "Trash" (\uf1f8)
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Carpeta (Usa FontAwesome)
+        # Botón Carpeta -> Icono "Folder Open" (\uf07c)
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
-        self.open_folder_btn.bind(on_press=self.open_general_gallery)
+        self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
         
         buttons_top_layout.add_widget(self.paste_btn)
         buttons_top_layout.add_widget(self.clear_btn)
         buttons_top_layout.add_widget(self.open_folder_btn)
         layout_main.add_widget(buttons_top_layout)
 
-        # Caja de Texto
+        # Caja de Texto expandida
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
             background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
@@ -110,7 +110,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL INTERACTIVO
+        # PESTAÑA 2: HISTORIAL INTERACTIVO (Modificado de forma segura)
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -128,6 +128,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         
+        # Contenedor dinámico vertical para alojar los botones individuales de cada video
         self.history_container = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None)
         self.history_container.bind(minimum_height=self.history_container.setter('height'))
         
@@ -174,7 +175,8 @@ class YTDownloaderX11(TabbedPanel):
         except Exception as e:
             pass
 
-    def open_general_gallery(self, instance):
+    def open_downloads_in_player(self, instance):
+        """ Invoca al reproductor de video nativo de Android apuntando directamente al directorio de descargas """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -186,13 +188,22 @@ class YTDownloaderX11(TabbedPanel):
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             
             PythonActivity.mActivity.startActivity(intent)
+            return
         except Exception as e:
             pass
 
+        try:
+            target_to_open = DOWNLOADS_DIR if os.path.exists(DOWNLOADS_DIR) else BASE_DIR
+            subprocess.Popen(['termux-open', target_to_open])
+        except Exception as err:
+            pass
+
     def play_specific_video(self, video_title):
+        """ Intenta localizar el archivo exacto en la carpeta Download e invoca el menú nativo 'Abrir con...' """
         clean_name = video_title.strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{clean_name}.mp4")
 
+        # Búsqueda de respaldo por coincidencia parcial si el título cambió sutilmente
         if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
             for f in os.listdir(DOWNLOADS_DIR):
                 if f.lower().startswith(clean_name.lower()[:10]) and f.endswith('.mp4'):
@@ -244,15 +255,15 @@ class YTDownloaderX11(TabbedPanel):
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-b]*[ -/]*[@-~])')
         return ansi_escape.sub('', text)
 
-    def strip_kivy_markup(self, text):
-        return re.sub(r'\[[^\]]+\]', '', text).strip()
+    def log(self, text):
+        cleaned_text = self.clean_ansi(text)
+        self.log_label.text += f"\n{cleaned_text}"
+        Clock.schedule_once(lambda dt: setattr(self.scroll, 'scroll_y', 0), 0.1)
 
     def save_to_history_file(self, title):
-        clean_title = self.strip_kivy_markup(title).replace("OK - ", "").strip()
-        if not clean_title: return
         try:
             with open(HISTORY_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"OK - {clean_title}\n")
+                f.write(f"OK - {title}\n")
             self.load_history_from_file(None)
             return
         except Exception as e:
@@ -260,7 +271,7 @@ class YTDownloaderX11(TabbedPanel):
 
         try:
             with open(BACKUP_HISTORY_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"OK - {clean_title}\n")
+                f.write(f"OK - {title}\n")
             self.load_history_from_file(None)
         except Exception as e:
             pass
@@ -278,13 +289,12 @@ class YTDownloaderX11(TabbedPanel):
                         text_line = line.strip()
                         if not text_line: continue
                         
-                        video_title = self.strip_kivy_markup(text_line)
-                        video_title = video_title.replace("OK - ", "").strip()
-                        
+                        # Limpiamos el prefijo 'OK - ' para obtener la cadena pura del título
+                        video_title = text_line.replace("OK - ", "").strip()
                         if not video_title: continue
                         
-                        # USAMOS MARKUP: El icono usa FontAwesome, pero cerramos la etiqueta [/font] 
-                        # para que el nombre del video regrese automáticamente a la fuente estándar (genérica) del sistema
+                        # Usamos markup=True. El icono de play (\uf01d) se renderiza explícitamente en FontAwesome
+                        # Al cerrar la etiqueta [/font], obligamos a Kivy a usar la fuente genérica por defecto de Android para el título
                         markup_text = f"[font={FONT_PATH}]\uf01d[/font]  {video_title}"
                         
                         btn_video = Button(
@@ -301,6 +311,7 @@ class YTDownloaderX11(TabbedPanel):
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
+                        # Vinculamos directamente el evento para disparar la acción 'Abrir con...' de este archivo
                         btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
@@ -351,11 +362,14 @@ class YTDownloaderX11(TabbedPanel):
         url = self.url_input.text.strip()
         if not url: return
         self.download_btn.disabled = True
-        format_opt = 'best[ext=mp4]/best'
+        
+        format_opt = 'b[ext=mp4]/best'
+            
         threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
     def download_video(self, url, format_opt):
-        out_template = os.path.join(DOWNLOADS_DIR, '%%(title)s.%%(ext)s')
+        out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
+        
         ydl_opts = {
             'format': format_opt, 
             'outtmpl': out_template, 
@@ -374,7 +388,7 @@ class YTDownloaderX11(TabbedPanel):
             self.save_to_history_file(title)
         except Exception as e:
             try:
-                backup_path = os.path.join(BASE_DIR, '%%(title)s.%%(ext)s')
+                backup_path = os.path.join(BASE_DIR, '%(title)s.%(ext)s')
                 ydl_opts['outtmpl'] = backup_path
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
@@ -407,7 +421,9 @@ class MyLogger(object):
 
 class YTApp(App):
     def build(self): return YTDownloaderX11()
-    def on_pause(self): return True
+    
+    def on_pause(self):
+        return True
 
 if __name__ == '__main__':
     YTApp().run()
