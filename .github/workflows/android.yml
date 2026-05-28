@@ -24,13 +24,17 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Instalar dependencias del sistema de Linux
+      - name: Instalar dependencias del sistema de Linux (Completas)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             ccache \
             git \
+            autoconf \
+            automake \
+            libtool \
+            libltdl-dev \
             libffi-dev \
             libssl-dev \
             libgstreamer1.0-dev \
@@ -57,22 +61,28 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython virtualenv
 
-      - name: Configurar caché de Buildozer
+      - name: LIMPIEZA ABSOLUTA DE ENTORNO LOCAL
+        run: |
+          echo "Destruyendo residuos previos de compilación..."
+          rm -rf .buildozer/
+          rm -rf bin/
+          buildozer android clean || true
+
+      - name: Configurar nueva caché de Buildozer
         uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
             .buildozer
-          key: ${{ runner.os }}-buildozer-manual-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-manual-
+            ${{ runner.os }}-buildozer-v2-
 
       - name: Compilar APK con Buildozer de forma directa
         run: |
           export BUILDOZER_WARN_ON_ROOT=0
           
-          # LIMPIEZA CRÍTICA: Desactivamos las variables globales de GitHub 
-          # que confunden al compilador con el NDK 27/29 y la API 37 nativas de la VM
+          # AISLAMIENTO: Borramos las variables invasoras del NDK global de la máquina de GitHub
           unset ANDROID_NDK
           unset ANDROID_NDK_HOME
           unset ANDROID_NDK_ROOT
@@ -83,12 +93,12 @@ jobs:
           # 1. Forzar la aceptación de licencias mediante el comando secrets inicial de Buildozer
           yes | buildozer android secrets || true
           
-          # 2. Si las herramientas base ya existen en caché, pre-aprobar licencias directamente con el sdkmanager
+          # 2. Si las herramientas base ya existen en la nueva caché, aprobar licencias con el sdkmanager
           if [ -d "$HOME/.buildozer/android/platform/android-sdk/tools/bin" ]; then
             yes | $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager --licenses || true
           fi
           
-          # 3. Lanzar la compilación inyectando el "Sí" infinito para que acepte dinámicamente las Build-Tools
+          # 3. Lanzar la compilación limpia e inyectar el "Sí" infinito
           yes | buildozer android debug
 
       - name: Subir APK compilado como Artefacto
