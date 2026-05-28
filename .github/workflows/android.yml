@@ -71,6 +71,12 @@ jobs:
         run: |
           export BUILDOZER_WARN_ON_ROOT=0
           
+          # LIMPIEZA CRÍTICA: Desactivamos las variables globales de GitHub 
+          # que confunden al compilador con el NDK 27/29 y la API 37 nativas de la VM
+          unset ANDROID_NDK
+          unset ANDROID_NDK_HOME
+          unset ANDROID_NDK_ROOT
+          
           # Asegurar que JAVA_HOME apunte al JDK correcto configurado por la acción
           echo "JAVA_HOME de compilación: $JAVA_HOME"
           
@@ -88,5 +94,5 @@ jobs:
       - name: Subir APK compilado como Artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: YoutubeDownloader-APK
+          name: YTD-Debug-APK
           path: bin/*.apk
