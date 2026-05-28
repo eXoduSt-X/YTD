@@ -110,7 +110,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL INTERACTIVO (Simplificado y Directo)
+        # PESTAÑA 2: HISTORIAL INTERACTIVO
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -122,13 +122,12 @@ class YTDownloaderX11(TabbedPanel):
         ))
         
         layout_history.add_widget(Label(
-            text="[color=888888][i]Tip: Toca un video para abrirlo directamente[/i][/color]",
+            text="[color=888888][i]Tip: Toca un archivo para reproducirlo directamente[/i][/color]",
             font_size='12sp', size_hint_y=None, height=20, markup=True
         ))
         
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         
-        # Contenedor dinámico vertical para alojar los botones individuales
         self.history_container = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None)
         self.history_container.bind(minimum_height=self.history_container.setter('height'))
         
@@ -176,7 +175,6 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def open_downloads_in_player(self, instance):
-        """ Invoca al reproductor de video nativo de Android apuntando directamente al directorio de descargas """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -198,9 +196,18 @@ class YTDownloaderX11(TabbedPanel):
         except Exception as err:
             pass
 
-    def play_specific_video(self, video_filename):
-        """ Recibe el nombre real con extensión e invoca el menú nativo 'Abrir con...' """
-        video_path = os.path.join(DOWNLOADS_DIR, video_filename)
+    def play_specific_video(self, clean_title):
+        """ Localiza de manera robusta el archivo de video e invoca un Intent seguro """
+        # Removemos cualquier extensión previa para no generar duplicados accidentales
+        base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
+        video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
+
+        # Verificación inteligente por si el archivo real difiere ligeramente en disco
+        if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
+            for file_in_dir in os.listdir(DOWNLOADS_DIR):
+                if file_in_dir.lower().startswith(base_name.lower()[:15]) and file_in_dir.endswith('.mp4'):
+                    video_path = os.path.join(DOWNLOADS_DIR, file_in_dir)
+                    break
 
         if os.path.exists(video_path):
             try:
@@ -208,24 +215,29 @@ class YTDownloaderX11(TabbedPanel):
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
                 Uri = autoclass('android.net.Uri')
-                File = autoclass('java.io.File')
                 
-                file_obj = File(video_path)
-                file_uri = Uri.fromFile(file_obj)
+                # Usamos una llamada de Uri compatible con el proveedor multimedia nativo de Android
+                # Esto evita la excepción de ruta expuesta (FileUriExposedException)
+                android_uri = Uri.parse(f"file://{video_path}")
                 
                 intent = Intent(Intent.ACTION_VIEW)
-                intent.setDataAndType(file_uri, "video/*")
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                intent.setDataAndType(android_uri, "video/*")
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
-                chooser = Intent.createChooser(intent, "Abrir video con:")
+                chooser = Intent.createChooser(intent, "Reproducir con:")
                 chooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
                 PythonActivity.mActivity.startActivity(chooser)
                 return
             except Exception as e:
-                self.log(f"[X] Error en selector nativo: {str(e)}")
+                # Método alternativo rápido usando el backend del sistema si falla jnius
+                try:
+                    subprocess.Popen(['termux-open', video_path])
+                    return
+                except:
+                    self.log(f"[X] Falló el reproductor del sistema: {str(e)}")
         else:
-            self.log(f"[color=ff5555][X] Archivo no encontrado en Download:[/color]\n{video_filename}")
+            self.log(f"[color=ff5555][X] Archivo no hallado físicamente en Download:[/color]\n{base_name}.mp4")
 
     def paste_from_native_clipboard(self, instance):
         try:
@@ -281,16 +293,17 @@ class YTDownloaderX11(TabbedPanel):
                         text_line = line.strip()
                         if not text_line: continue
                         
-                        # Extraemos el título puro del video
                         video_title = text_line.replace("OK - ", "").strip()
                         if not video_title: continue
                         
-                        # Construimos el nombre exacto del archivo con su extensión
-                        filename_real = f"{video_title}.mp4"
+                        # Nos aseguramos de que termine exactamente de forma limpia en .mp4 en la interfaz gráfica
+                        if not video_title.endswith('.mp4'):
+                            display_text = f"{video_title}.mp4"
+                        else:
+                            display_text = video_title
                         
-                        # El botón ahora muestra el nombre limpio y usa la tipografía nativa del sistema
                         btn_video = Button(
-                            text=filename_real,
+                            text=display_text,
                             font_size='14sp',
                             size_hint_y=None,
                             height=58,
@@ -302,8 +315,8 @@ class YTDownloaderX11(TabbedPanel):
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
-                        # Enviamos directamente el nombre de archivo real sin adornos
-                        btn_video.bind(on_press=lambda btn, filename=filename_real: self.play_specific_video(filename))
+                        # Enviamos la cadena limpia original para que la función play_specific_video gestione la ruta exacta
+                        btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
             except Exception as e:
