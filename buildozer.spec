@@ -50,8 +50,8 @@ p4a.branch = master
 android.intent_filters = [ {"action": "android.intent.action.SEND", "category": ["android.intent.category.DEFAULT"], "data": [{"mimeType": "text/plain"}]} ]
 
 # Parámetros oficiales de licencias y logcat[cite: 4]
-android.skip_update = 0[cite: 4]
-android.accept_sdk_licenses = 1[cite: 4]
+# android.skip_update = 0[cite: 4]
+# android.accept_sdk_licenses = 1[cite: 4]
 android.logcat_filters = *:S python:D[cite: 4]
 
 # Compilamos únicamente para la arquitectura de 64 bits de tu teléfono[cite: 4]
