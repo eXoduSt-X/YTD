@@ -25,7 +25,7 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
-# Ruta fija de la tipografía local Font Awesome (Solo para botones superiores)
+# Ruta fija de la tipografía local Font Awesome
 FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
 
 class YTDownloaderX11(TabbedPanel):
@@ -47,26 +47,22 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # Contenedor para los botones superiores de acción rápidos (Centrados)
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=15)
-        buttons_top_layout.width = 255  # (3 botones * 75 de ancho) + (2 espacios * 15)
+        buttons_top_layout.width = 255  
         buttons_top_layout.pos_hint = {'center_x': 0.5}
 
-        # Botón Pegar -> Icono "Paste" (\uf0ea)
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar -> Icono "Trash" (\uf1f8)
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Carpeta -> Icono "Folder Open" (\uf07c)
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
@@ -78,7 +74,6 @@ class YTDownloaderX11(TabbedPanel):
         buttons_top_layout.add_widget(self.open_folder_btn)
         layout_main.add_widget(buttons_top_layout)
 
-        # Caja de Texto expandida
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", multiline=False, padding=[12, 16, 12, 16],
             background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
@@ -88,7 +83,6 @@ class YTDownloaderX11(TabbedPanel):
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # Botón principal de acción directa
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=56, font_size='18sp', bold=True
@@ -186,21 +180,15 @@ class YTDownloaderX11(TabbedPanel):
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             
             PythonActivity.mActivity.startActivity(intent)
-            return
         except Exception as e:
-            pass
-
-        try:
-            target_to_open = DOWNLOADS_DIR if os.path.exists(DOWNLOADS_DIR) else BASE_DIR
-            subprocess.Popen(['termux-open', target_to_open])
-        except Exception as err:
-            pass
+            self.log(f"[X] No se pudo abrir la galería multimedia: {str(e)}")
 
     def play_specific_video(self, clean_title):
-        """ Localiza el archivo e invoca un Intent corregido compatible con Android modernos sin romper createChooser """
+        """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro """
         base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
 
+        # Búsqueda de coincidencia parcial si el archivo real varía
         if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
             for file_in_dir in os.listdir(DOWNLOADS_DIR):
                 if file_in_dir.lower().startswith(base_name.lower()[:15]) and file_in_dir.endswith('.mp4'):
@@ -210,43 +198,37 @@ class YTDownloaderX11(TabbedPanel):
         if os.path.exists(video_path):
             try:
                 from jnius import autoclass, cast
-                from android.utils import AndroidString
                 
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
+                Uri = autoclass('android.net.Uri')
                 File = autoclass('java.io.File')
+                JavaString = autoclass('java.lang.String')
+                StrictMode = autoclass('android.os.StrictMode')
+                
+                # Desactivamos temporalmente la restricción de exposición de rutas file://
+                StrictMode.disableDeathOnFileUriExposure()
                 
                 current_activity = PythonActivity.mActivity
                 file_obj = File(video_path)
+                video_uri = Uri.fromFile(file_obj)
                 
-                # Intentamos usar FileProvider nativo de la app para evitar restricciones StrictMode de Android
-                try:
-                    FileProvider = autoclass('androidx.core.content.FileProvider')
-                    package_name = current_activity.getPackageName()
-                    video_uri = FileProvider.getUriForFile(current_activity, f"{package_name}.fileprovider", file_obj)
-                except:
-                    # Alternativa directa si no tiene configurado el provider en el manifest xml
-                    Uri = autoclass('android.net.Uri')
-                    video_uri = Uri.fromFile(file_obj)
-                
+                # Creamos el Intent para ver el video
                 intent = Intent(Intent.ACTION_VIEW)
                 intent.setDataAndType(video_uri, "video/*")
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                # CORRECCIÓN CLAVE: Convertimos el título a un AndroidString explícito (CharSequence en Java)
-                chooser_title = cast('java.lang.CharSequence', AndroidString("Reproducir con:"))
+                # Conversión limpia y segura a CharSequence para evitar el fallo de createChooser
+                java_title = JavaString.valueOf("Reproducir con:")
+                char_sequence_title = cast('java.lang.CharSequence', java_title)
                 
-                chooser_intent = Intent.createChooser(intent, chooser_title)
+                chooser_intent = Intent.createChooser(intent, char_sequence_title)
                 chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
                 current_activity.startActivity(chooser_intent)
                 return
             except Exception as e:
-                self.log(f"[X] Falló JNI nativo. Probando Termux: {str(e)}")
-                try:
-                    subprocess.Popen(['termux-open', video_path])
-                except Exception as err:
-                    self.log(f"[X] Error definitivo: {str(err)}")
+                self.log(f"[X] Fallo al iniciar el reproductor nativo: {str(e)}")
         else:
             self.log(f"[color=ff5555][X] Archivo no hallado físicamente en Download:[/color]\n{base_name}.mp4")
 
@@ -436,3 +418,4 @@ class YTApp(App):
 
 if __name__ == '__main__':
     YTApp().run()
+        
