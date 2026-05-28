@@ -169,6 +169,7 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def open_downloads_in_player(self, instance):
+        """ Abre el gestor de archivos nativo del sistema directamente en la carpeta Download """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -176,15 +177,29 @@ class YTDownloaderX11(TabbedPanel):
             Uri = autoclass('android.net.Uri')
             
             intent = Intent(Intent.ACTION_VIEW)
-            intent.setDataAndType(Uri.parse("content://media/external/video/media"), "video/*")
+            
+            # Apunta exactamente al proveedor del almacenamiento interno en el directorio Download
+            downloads_uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
+            
+            # Forzamos a que el tipo MIME sea un directorio de documentos
+            intent.setDataAndType(downloads_uri, "vnd.android.document/directory")
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             
             PythonActivity.mActivity.startActivity(intent)
+            return
         except Exception as e:
-            self.log(f"[X] No se pudo abrir la galería multimedia: {str(e)}")
+            # Alternativa genérica de respaldo si falla el URI estricto
+            try:
+                intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.setType("video/*")
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                PythonActivity.mActivity.startActivity(intent)
+            except Exception as err:
+                self.log(f"[X] No se pudo abrir el gestor de archivos: {str(err)}")
 
     def play_specific_video(self, clean_title):
-        """ Busca el video físico y arranca un Intent limpio evitando la llamada de cast() """
+        """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro sin cast """
         base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
 
@@ -205,7 +220,7 @@ class YTDownloaderX11(TabbedPanel):
                 JavaString = autoclass('java.lang.String')
                 StrictMode = autoclass('android.os.StrictMode')
                 
-                # Desactivamos restricciones de Uri directas tipo file://
+                # Desactivamos restricciones de exposición estricta de rutas de archivos
                 StrictMode.disableDeathOnFileUriExposure()
                 
                 current_activity = PythonActivity.mActivity
@@ -216,8 +231,7 @@ class YTDownloaderX11(TabbedPanel):
                 intent.setDataAndType(video_uri, "video/*")
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                # Para evitar fallos de firmas en Java, creamos un String de Java real 
-                # y lo enviamos directamente como título de createChooser sin castear.
+                # Pasamos un String de Java legítimo para evitar conflictos de firmas de métodos
                 java_title = JavaString("Reproducir video con:")
                 
                 chooser_intent = Intent.createChooser(intent, java_title)
