@@ -25,7 +25,7 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
-# Ruta fija de la tipografía local Font Awesome
+# Ruta fija de la tipografía local Font Awesome (Solo para botones superiores)
 FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
 
 class YTDownloaderX11(TabbedPanel):
@@ -110,7 +110,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL INTERACTIVO
+        # PESTAÑA 2: HISTORIAL INTERACTIVO (Simplificado y Directo)
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -122,7 +122,7 @@ class YTDownloaderX11(TabbedPanel):
         ))
         
         layout_history.add_widget(Label(
-            text="[color=888888][i]Tip: Toca un video para abrirlo con el reproductor del sistema[/i][/color]",
+            text="[color=888888][i]Tip: Toca un video para abrirlo directamente[/i][/color]",
             font_size='12sp', size_hint_y=None, height=20, markup=True
         ))
         
@@ -198,17 +198,9 @@ class YTDownloaderX11(TabbedPanel):
         except Exception as err:
             pass
 
-    def play_specific_video(self, video_title):
-        """ Intenta localizar el archivo exacto en la carpeta Download e invoca el menú nativo 'Abrir con...' """
-        clean_name = video_title.strip()
-        video_path = os.path.join(DOWNLOADS_DIR, f"{clean_name}.mp4")
-
-        # Búsqueda de respaldo por coincidencia parcial si el título cambió sutilmente
-        if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
-            for f in os.listdir(DOWNLOADS_DIR):
-                if f.lower().startswith(clean_name.lower()[:10]) and f.endswith('.mp4'):
-                    video_path = os.path.join(DOWNLOADS_DIR, f)
-                    break
+    def play_specific_video(self, video_filename):
+        """ Recibe el nombre real con extensión e invoca el menú nativo 'Abrir con...' """
+        video_path = os.path.join(DOWNLOADS_DIR, video_filename)
 
         if os.path.exists(video_path):
             try:
@@ -233,7 +225,7 @@ class YTDownloaderX11(TabbedPanel):
             except Exception as e:
                 self.log(f"[X] Error en selector nativo: {str(e)}")
         else:
-            self.log(f"[color=ff5555][X] Archivo no localizado en Download:[/color]\n{clean_name}.mp4")
+            self.log(f"[color=ff5555][X] Archivo no encontrado en Download:[/color]\n{video_filename}")
 
     def paste_from_native_clipboard(self, instance):
         try:
@@ -289,17 +281,17 @@ class YTDownloaderX11(TabbedPanel):
                         text_line = line.strip()
                         if not text_line: continue
                         
-                        # Extraemos la cadena pura del título removiendo el 'OK - '
+                        # Extraemos el título puro del video
                         video_title = text_line.replace("OK - ", "").strip()
                         if not video_title: continue
                         
-                        # El icono usa FontAwesome pero cerramos el tag [/font]. El título usa fuente nativa Android.
-                        markup_text = f"[font={FONT_PATH}]\uf01d[/font]  {video_title}"
+                        # Construimos el nombre exacto del archivo con su extensión
+                        filename_real = f"{video_title}.mp4"
                         
+                        # El botón ahora muestra el nombre limpio y usa la tipografía nativa del sistema
                         btn_video = Button(
-                            text=markup_text,
-                            markup=True,
-                            font_size='15sp',
+                            text=filename_real,
+                            font_size='14sp',
                             size_hint_y=None,
                             height=58,
                             halign='left',
@@ -310,8 +302,8 @@ class YTDownloaderX11(TabbedPanel):
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
-                        # Pasamos 'video_title' directamente al hilo para que use el texto real sin marcas markup
-                        btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
+                        # Enviamos directamente el nombre de archivo real sin adornos
+                        btn_video.bind(on_press=lambda btn, filename=filename_real: self.play_specific_video(filename))
                         self.history_container.add_widget(btn_video)
                     return
             except Exception as e:
