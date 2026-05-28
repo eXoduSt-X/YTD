@@ -25,6 +25,9 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
+# Ruta de la tipografía FontAwesome para los iconos
+FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
+
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -44,29 +47,29 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # Contenedor para los botones superiores de acción rápidos (Símbolos nativos limpios)
+        # Contenedor para los botones superiores de acción rápidos
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=15)
         buttons_top_layout.width = 255  
         buttons_top_layout.pos_hint = {'center_x': 0.5}
 
-        # Botón Pegar (Símbolo de portapapeles/nota unificado)
+        # Botón Pegar (Usa FontAwesome)
         self.paste_btn = Button(
-            text="📋", background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='20sp'
+            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar (Símbolo de papelera universal)
+        # Botón Limpiar (Usa FontAwesome)
         self.clear_btn = Button(
-            text="🗑", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='20sp'
+            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Carpeta (Símbolo de directorio abierto)
+        # Botón Carpeta (Usa FontAwesome)
         self.open_folder_btn = Button(
-            text="📂", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='20sp'
+            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
         )
         self.open_folder_btn.bind(on_press=self.open_general_gallery)
         
@@ -280,8 +283,13 @@ class YTDownloaderX11(TabbedPanel):
                         
                         if not video_title: continue
                         
+                        # USAMOS MARKUP: El icono usa FontAwesome, pero cerramos la etiqueta [/font] 
+                        # para que el nombre del video regrese automáticamente a la fuente estándar (genérica) del sistema
+                        markup_text = f"[font={FONT_PATH}]\uf01d[/font]  {video_title}"
+                        
                         btn_video = Button(
-                            text=f"▶  {video_title}",
+                            text=markup_text,
+                            markup=True,
                             font_size='15sp',
                             size_hint_y=None,
                             height=58,
@@ -347,7 +355,7 @@ class YTDownloaderX11(TabbedPanel):
         threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
     def download_video(self, url, format_opt):
-        out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
+        out_template = os.path.join(DOWNLOADS_DIR, '%%(title)s.%%(ext)s')
         ydl_opts = {
             'format': format_opt, 
             'outtmpl': out_template, 
@@ -366,7 +374,7 @@ class YTDownloaderX11(TabbedPanel):
             self.save_to_history_file(title)
         except Exception as e:
             try:
-                backup_path = os.path.join(BASE_DIR, '%(title)s.%(ext)s')
+                backup_path = os.path.join(BASE_DIR, '%%(title)s.%%(ext)s')
                 ydl_opts['outtmpl'] = backup_path
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
