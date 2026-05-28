@@ -184,11 +184,10 @@ class YTDownloaderX11(TabbedPanel):
             self.log(f"[X] No se pudo abrir la galería multimedia: {str(e)}")
 
     def play_specific_video(self, clean_title):
-        """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro """
+        """ Busca el video físico y arranca un Intent limpio evitando la llamada de cast() """
         base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
 
-        # Búsqueda de coincidencia parcial si el archivo real varía
         if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
             for file_in_dir in os.listdir(DOWNLOADS_DIR):
                 if file_in_dir.lower().startswith(base_name.lower()[:15]) and file_in_dir.endswith('.mp4'):
@@ -197,7 +196,7 @@ class YTDownloaderX11(TabbedPanel):
 
         if os.path.exists(video_path):
             try:
-                from jnius import autoclass, cast
+                from jnius import autoclass
                 
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
@@ -206,29 +205,28 @@ class YTDownloaderX11(TabbedPanel):
                 JavaString = autoclass('java.lang.String')
                 StrictMode = autoclass('android.os.StrictMode')
                 
-                # Desactivamos temporalmente la restricción de exposición de rutas file://
+                # Desactivamos restricciones de Uri directas tipo file://
                 StrictMode.disableDeathOnFileUriExposure()
                 
                 current_activity = PythonActivity.mActivity
                 file_obj = File(video_path)
                 video_uri = Uri.fromFile(file_obj)
                 
-                # Creamos el Intent para ver el video
                 intent = Intent(Intent.ACTION_VIEW)
                 intent.setDataAndType(video_uri, "video/*")
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                # Conversión limpia y segura a CharSequence para evitar el fallo de createChooser
-                java_title = JavaString.valueOf("Reproducir con:")
-                char_sequence_title = cast('java.lang.CharSequence', java_title)
+                # Para evitar fallos de firmas en Java, creamos un String de Java real 
+                # y lo enviamos directamente como título de createChooser sin castear.
+                java_title = JavaString("Reproducir video con:")
                 
-                chooser_intent = Intent.createChooser(intent, char_sequence_title)
+                chooser_intent = Intent.createChooser(intent, java_title)
                 chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
                 current_activity.startActivity(chooser_intent)
                 return
             except Exception as e:
-                self.log(f"[X] Fallo al iniciar el reproductor nativo: {str(e)}")
+                self.log(f"[X] Falló al iniciar el reproductor nativo: {str(e)}")
         else:
             self.log(f"[color=ff5555][X] Archivo no hallado físicamente en Download:[/color]\n{base_name}.mp4")
 
@@ -418,4 +416,3 @@ class YTApp(App):
 
 if __name__ == '__main__':
     YTApp().run()
-        
