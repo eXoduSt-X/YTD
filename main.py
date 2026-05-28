@@ -197,12 +197,10 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def play_specific_video(self, clean_title):
-        """ Localiza de manera robusta el archivo de video e invoca un Intent seguro """
-        # Removemos cualquier extensión previa para no generar duplicados accidentales
+        """ Localiza el archivo e invoca un Intent corregido compatible con Android modernos sin romper createChooser """
         base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
 
-        # Verificación inteligente por si el archivo real difiere ligeramente en disco
         if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
             for file_in_dir in os.listdir(DOWNLOADS_DIR):
                 if file_in_dir.lower().startswith(base_name.lower()[:15]) and file_in_dir.endswith('.mp4'):
@@ -211,31 +209,44 @@ class YTDownloaderX11(TabbedPanel):
 
         if os.path.exists(video_path):
             try:
-                from jnius import autoclass
+                from jnius import autoclass, cast
+                from android.utils import AndroidString
+                
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
-                Uri = autoclass('android.net.Uri')
+                File = autoclass('java.io.File')
                 
-                # Usamos una llamada de Uri compatible con el proveedor multimedia nativo de Android
-                # Esto evita la excepción de ruta expuesta (FileUriExposedException)
-                android_uri = Uri.parse(f"file://{video_path}")
+                current_activity = PythonActivity.mActivity
+                file_obj = File(video_path)
+                
+                # Intentamos usar FileProvider nativo de la app para evitar restricciones StrictMode de Android
+                try:
+                    FileProvider = autoclass('androidx.core.content.FileProvider')
+                    package_name = current_activity.getPackageName()
+                    video_uri = FileProvider.getUriForFile(current_activity, f"{package_name}.fileprovider", file_obj)
+                except:
+                    # Alternativa directa si no tiene configurado el provider en el manifest xml
+                    Uri = autoclass('android.net.Uri')
+                    video_uri = Uri.fromFile(file_obj)
                 
                 intent = Intent(Intent.ACTION_VIEW)
-                intent.setDataAndType(android_uri, "video/*")
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                intent.setDataAndType(video_uri, "video/*")
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                chooser = Intent.createChooser(intent, "Reproducir con:")
-                chooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                # CORRECCIÓN CLAVE: Convertimos el título a un AndroidString explícito (CharSequence en Java)
+                chooser_title = cast('java.lang.CharSequence', AndroidString("Reproducir con:"))
                 
-                PythonActivity.mActivity.startActivity(chooser)
+                chooser_intent = Intent.createChooser(intent, chooser_title)
+                chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                
+                current_activity.startActivity(chooser_intent)
                 return
             except Exception as e:
-                # Método alternativo rápido usando el backend del sistema si falla jnius
+                self.log(f"[X] Falló JNI nativo. Probando Termux: {str(e)}")
                 try:
                     subprocess.Popen(['termux-open', video_path])
-                    return
-                except:
-                    self.log(f"[X] Falló el reproductor del sistema: {str(e)}")
+                except Exception as err:
+                    self.log(f"[X] Error definitivo: {str(err)}")
         else:
             self.log(f"[color=ff5555][X] Archivo no hallado físicamente en Download:[/color]\n{base_name}.mp4")
 
@@ -296,7 +307,6 @@ class YTDownloaderX11(TabbedPanel):
                         video_title = text_line.replace("OK - ", "").strip()
                         if not video_title: continue
                         
-                        # Nos aseguramos de que termine exactamente de forma limpia en .mp4 en la interfaz gráfica
                         if not video_title.endswith('.mp4'):
                             display_text = f"{video_title}.mp4"
                         else:
@@ -315,7 +325,6 @@ class YTDownloaderX11(TabbedPanel):
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
-                        # Enviamos la cadena limpia original para que la función play_specific_video gestione la ruta exacta
                         btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
@@ -366,9 +375,7 @@ class YTDownloaderX11(TabbedPanel):
         url = self.url_input.text.strip()
         if not url: return
         self.download_btn.disabled = True
-        
         format_opt = 'b[ext=mp4]/best'
-            
         threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
     def download_video(self, url, format_opt):
@@ -425,9 +432,7 @@ class MyLogger(object):
 
 class YTApp(App):
     def build(self): return YTDownloaderX11()
-    
-    def on_pause(self):
-        return True
+    def on_pause(self): return True
 
 if __name__ == '__main__':
     YTApp().run()
