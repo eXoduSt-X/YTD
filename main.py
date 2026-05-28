@@ -88,7 +88,7 @@ class YTDownloaderX11(TabbedPanel):
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # Botón principal
+        # Botón principal de acción directa
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=56, font_size='18sp', bold=True
@@ -122,13 +122,12 @@ class YTDownloaderX11(TabbedPanel):
         ))
         
         layout_history.add_widget(Label(
-            text="[color=888888][i]Tip: Toca un video de la lista para reproducirlo directamente[/i][/color]",
+            text="[color=888888][i]Tip: Toca un video para abrirlo con el reproductor del sistema[/i][/color]",
             font_size='12sp', size_hint_y=None, height=20, markup=True
         ))
         
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         
-        # Este contenedor alojará los botones de cada video de forma ordenada
         self.history_container = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None)
         self.history_container.bind(minimum_height=self.history_container.setter('height'))
         
@@ -176,7 +175,6 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def open_general_gallery(self, instance):
-        """ Abre la galería global de videos del teléfono como respaldo """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -192,18 +190,16 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def play_specific_video(self, video_title):
-        """ Busca el archivo físico en la carpeta Download y lo lanza en el reproductor nativo """
-        # Reconstruimos el nombre exacto con el que yt-dlp guarda los archivos (.mp4)
-        filename = f"{video_title}.mp4"
-        video_path = os.path.join(DOWNLOADS_DIR, filename)
+        """ Lanza el menú nativo 'Abrir con...' apuntando al archivo de manera limpia """
+        clean_name = video_title.strip()
+        video_path = os.path.join(DOWNLOADS_DIR, f"{clean_name}.mp4")
 
-        # Si no lo encuentra por caracteres especiales, busca un archivo aproximado en la carpeta
-        if not os.path.exists(video_path):
-            if os.path.exists(DOWNLOADS_DIR):
-                for f in os.listdir(DOWNLOADS_DIR):
-                    if f.lower().startswith(video_title.lower()[:10]) and f.endswith('.mp4'):
-                        video_path = os.path.join(DOWNLOADS_DIR, f)
-                        break
+        # Búsqueda adaptativa por si el nombre varía ligeramente
+        if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
+            for f in os.listdir(DOWNLOADS_DIR):
+                if f.lower().startswith(clean_name.lower()[:10]) and f.endswith('.mp4'):
+                    video_path = os.path.join(DOWNLOADS_DIR, f)
+                    break
 
         if os.path.exists(video_path):
             try:
@@ -213,24 +209,23 @@ class YTDownloaderX11(TabbedPanel):
                 Uri = autoclass('android.net.Uri')
                 File = autoclass('java.io.File')
                 
-                file_object = File(video_path)
-                intent = Intent(Intent.ACTION_VIEW)
+                file_obj = File(video_path)
+                file_uri = Uri.fromFile(file_obj)
                 
-                # Para evitar conflictos de permisos de lectura de URI en Android 11+, pasamos el archivo directo
-                intent.setDataAndType(Uri.fromFile(file_object), "video/*")
+                intent = Intent(Intent.ACTION_VIEW)
+                intent.setDataAndType(file_uri, "video/*")
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                PythonActivity.mActivity.startActivity(intent)
+                # Forzar el diálogo nativo 'Abrir con...' de Android
+                chooser = Intent.createChooser(intent, "Abrir video con:")
+                chooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                
+                PythonActivity.mActivity.startActivity(chooser)
                 return
             except Exception as e:
-                self.log(f"[X] Error al abrir reproductor nativo: {str(e)}")
-                
-            try:
-                subprocess.Popen(['termux-open', video_path])
-            except Exception:
-                pass
+                self.log(f"[X] Error en selector nativo: {str(e)}")
         else:
-            self.log(f"[color=ff5555][X] El archivo ya no existe en Descargas:[/color] {filename}")
+            self.log(f"[color=ff5555][X] Archivo no localizado en Download:[/color]\n{clean_name}.mp4")
 
     def paste_from_native_clipboard(self, instance):
         try:
@@ -252,14 +247,13 @@ class YTDownloaderX11(TabbedPanel):
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-b]*[ -/]*[@-~])')
         return ansi_escape.sub('', text)
 
-    def log(self, text):
-        cleaned_text = self.clean_ansi(text)
-        self.log_label.text += f"\n{cleaned_text}"
-        Clock.schedule_once(lambda dt: setattr(self.scroll, 'scroll_y', 0), 0.1)
+    def strip_kivy_markup(self, text):
+        """ Remueve por completo etiquetas [color...], [b], etc., para limpiar logs viejos """
+        return re.sub(r'\[[^\]]+\]', '', text).strip()
 
     def save_to_history_file(self, title):
-        # Limpiamos el título de marcas de estado antes de persistirlo
-        clean_title = title.replace("OK - ", "").strip()
+        clean_title = self.strip_kivy_markup(title).replace("OK - ", "").strip()
+        if not clean_title: return
         try:
             with open(HISTORY_FILE, 'a', encoding='utf-8') as f:
                 f.write(f"OK - {clean_title}\n")
@@ -276,47 +270,44 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def load_history_from_file(self, instance):
-        # Limpiamos el contenedor viejo para renderizar la lista actualizada
         self.history_container.clear_widgets()
-        
         target_path = HISTORY_FILE if os.path.exists(HISTORY_FILE) else BACKUP_HISTORY_FILE
+        
         if os.path.exists(target_path):
             try:
                 with open(target_path, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
                 if lines:
-                    # Invertimos para que las descargas más nuevas queden arriba
                     for line in reversed(lines):
                         text_line = line.strip()
-                        if text_line.startswith("OK - "):
-                            video_title = text_line.replace("OK - ", "")
-                        else:
-                            video_title = text_line
-                            
+                        if not text_line: continue
+                        
+                        # Limpieza profunda de marcas antiguas
+                        video_title = self.strip_kivy_markup(text_line)
+                        video_title = video_title.replace("OK - ", "").strip()
+                        
                         if not video_title: continue
                         
-                        # Creamos un botón elegante por cada video de la lista
+                        # Usamos la fuente estándar del sistema para el texto del botón, evitando conflictos de FontAwesome
                         btn_video = Button(
-                            text=f"\uf16a  {video_title}",
-                            font_name=FONT_PATH,
+                            text=f"▶  {video_title}",
+                            font_size='15sp',
                             size_hint_y=None,
-                            height=54,
+                            height=58,
                             halign='left',
                             valign='middle',
                             padding=[15, 0],
                             background_normal="",
-                            background_color=(0.14, 0.14, 0.16, 1),
-                            color=(0.85, 0.8, 0.95, 1),
-                            text_size=(Window.width - 60, None)
+                            background_color=(0.12, 0.12, 0.14, 1),
+                            color=(0.9, 0.88, 0.95, 1),
+                            text_size=(Window.width - 40, None)
                         )
-                        # Al tocar este botón específico, se manda a reproducir su título correspondiente
-                        btn_video.bind(on_press=lambda btn, title=video_title: self.play_specific_video(title))
+                        btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
             except Exception as e:
                 pass
                 
-        # Si no hay registros, mostramos una etiqueta sutil
         self.history_container.add_widget(Label(
             text="No hay descargas registradas aún.",
             size_hint_y=None,
@@ -361,14 +352,11 @@ class YTDownloaderX11(TabbedPanel):
         url = self.url_input.text.strip()
         if not url: return
         self.download_btn.disabled = True
-        
-        format_opt = 'b[ext=mp4]/best'
-            
+        format_opt = 'best[ext=mp4]/best'
         threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
     def download_video(self, url, format_opt):
         out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
-        
         ydl_opts = {
             'format': format_opt, 
             'outtmpl': out_template, 
@@ -420,9 +408,7 @@ class MyLogger(object):
 
 class YTApp(App):
     def build(self): return YTDownloaderX11()
-    
-    def on_pause(self):
-        return True
+    def on_pause(self): return True
 
 if __name__ == '__main__':
     YTApp().run()
