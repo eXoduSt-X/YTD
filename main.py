@@ -169,34 +169,44 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def open_downloads_in_player(self, instance):
-        """ Abre el gestor de archivos nativo del sistema directamente en la carpeta Download """
+        """ Abre el menú 'Abrir con...' para que elijas qué explorador de archivos deseas usar """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             Intent = autoclass('android.content.Intent')
             Uri = autoclass('android.net.Uri')
+            JavaString = autoclass('java.lang.String')
+            StrictMode = autoclass('android.os.StrictMode')
+            
+            # Desactivamos restricciones de hilos para permitir pasar esquemas file:// directos
+            StrictMode.disableDeathOnFileUriExposure()
+            
+            # Pasamos la ruta física cruda usando esquema tradicional de archivos
+            folder_uri = Uri.parse(f"file://{DOWNLOADS_DIR}")
             
             intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(folder_uri, "resource/folder")
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
             
-            # Apunta exactamente al proveedor del almacenamiento interno en el directorio Download
-            downloads_uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
+            # Forzamos la llamada mediante selector nativo usando un String de Java limpio
+            java_title = JavaString("Abrir carpeta con:")
+            chooser_intent = Intent.createChooser(intent, java_title)
+            chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             
-            # Forzamos a que el tipo MIME sea un directorio de documentos
-            intent.setDataAndType(downloads_uri, "vnd.android.document/directory")
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            
-            PythonActivity.mActivity.startActivity(intent)
+            PythonActivity.mActivity.startActivity(chooser_intent)
             return
         except Exception as e:
-            # Alternativa genérica de respaldo si falla el URI estricto
+            # Plan B: Si la versión de Android rechaza el tipo "resource/folder" pasamos a un selector genérico
             try:
                 intent = Intent(Intent.ACTION_GET_CONTENT)
-                intent.setType("video/*")
+                intent.setType("*/*")
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                PythonActivity.mActivity.startActivity(intent)
+                java_title_backup = JavaString("Selecciona explorador:")
+                chooser_backup = Intent.createChooser(intent, java_title_backup)
+                chooser_backup.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                PythonActivity.mActivity.startActivity(chooser_backup)
             except Exception as err:
-                self.log(f"[X] No se pudo abrir el gestor de archivos: {str(err)}")
+                self.log(f"[X] No se pudo lanzar el selector de archivos: {str(err)}")
 
     def play_specific_video(self, clean_title):
         """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro sin cast """
@@ -430,3 +440,4 @@ class YTApp(App):
 
 if __name__ == '__main__':
     YTApp().run()
+        
