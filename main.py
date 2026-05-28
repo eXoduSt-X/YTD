@@ -25,9 +25,6 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
-# Ruta fija de la tipografía local Font Awesome
-FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
-
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -47,29 +44,29 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # Contenedor para los botones superiores de acción rápidos (Centrados)
+        # Contenedor para los botones superiores de acción rápidos (Símbolos nativos limpios)
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=15)
         buttons_top_layout.width = 255  
         buttons_top_layout.pos_hint = {'center_x': 0.5}
 
-        # Botón Pegar
+        # Botón Pegar (Símbolo de portapapeles/nota unificado)
         self.paste_btn = Button(
-            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
+            text="📋", background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='20sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar
+        # Botón Limpiar (Símbolo de papelera universal)
         self.clear_btn = Button(
-            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
+            text="🗑", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='20sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Carpeta
+        # Botón Carpeta (Símbolo de directorio abierto)
         self.open_folder_btn = Button(
-            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
+            text="📂", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='20sp'
         )
         self.open_folder_btn.bind(on_press=self.open_general_gallery)
         
@@ -110,7 +107,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL INTERACTIVO CON BOTONES DINÁMICOS
+        # PESTAÑA 2: HISTORIAL INTERACTIVO
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
@@ -190,11 +187,9 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def play_specific_video(self, video_title):
-        """ Lanza el menú nativo 'Abrir con...' apuntando al archivo de manera limpia """
         clean_name = video_title.strip()
         video_path = os.path.join(DOWNLOADS_DIR, f"{clean_name}.mp4")
 
-        # Búsqueda adaptativa por si el nombre varía ligeramente
         if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
             for f in os.listdir(DOWNLOADS_DIR):
                 if f.lower().startswith(clean_name.lower()[:10]) and f.endswith('.mp4'):
@@ -216,7 +211,6 @@ class YTDownloaderX11(TabbedPanel):
                 intent.setDataAndType(file_uri, "video/*")
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                # Forzar el diálogo nativo 'Abrir con...' de Android
                 chooser = Intent.createChooser(intent, "Abrir video con:")
                 chooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
@@ -248,7 +242,6 @@ class YTDownloaderX11(TabbedPanel):
         return ansi_escape.sub('', text)
 
     def strip_kivy_markup(self, text):
-        """ Remueve por completo etiquetas [color...], [b], etc., para limpiar logs viejos """
         return re.sub(r'\[[^\]]+\]', '', text).strip()
 
     def save_to_history_file(self, title):
@@ -282,13 +275,11 @@ class YTDownloaderX11(TabbedPanel):
                         text_line = line.strip()
                         if not text_line: continue
                         
-                        # Limpieza profunda de marcas antiguas
                         video_title = self.strip_kivy_markup(text_line)
                         video_title = video_title.replace("OK - ", "").strip()
                         
                         if not video_title: continue
                         
-                        # Usamos la fuente estándar del sistema para el texto del botón, evitando conflictos de FontAwesome
                         btn_video = Button(
                             text=f"▶  {video_title}",
                             font_size='15sp',
