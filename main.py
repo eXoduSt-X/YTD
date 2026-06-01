@@ -48,45 +48,54 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # --- FILA DE BOTONES: NEGROS, CUADRADOS Y OCUPANDO TODO EL ANCHO ---
-        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=60, spacing=5)
+        # --- FILA DE BOTONES: DINÁMICAMENTE CUADRADOS (1:1) Y NEGROS ---
+        # Removimos el "height" fijo del contenedor para que crezca según sus hijos cuadrados
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, spacing=5)
+        # Sincroniza la altura del contenedor con la altura de uno de los botones cuadrados
+        buttons_top_layout.bind(minimum_height=buttons_top_layout.setter('height'))
 
-        # Botón Pegar (25% del ancho)
+        # Función lambda para forzar que el alto sea exactamente igual al ancho (1:1)
+        force_square = lambda instance, value: setattr(instance, 'height', value)
+
+        # Botón Pegar
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1), 
-            color=(1, 1, 1, 1), size_hint_x=0.25, font_size='22sp'
+            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
         )
+        self.paste_btn.bind(width=force_square)
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar (25% del ancho)
+        # Botón Limpiar
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_x=0.25, font_size='22sp'
+            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
         )
+        self.clear_btn.bind(width=force_square)
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Abrir Carpeta (25% del ancho)
+        # Botón Abrir Carpeta
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_x=0.25, font_size='22sp'
+            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
         )
+        self.open_folder_btn.bind(width=force_square)
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
-        # Botón Toggle MP4 / MP3 (25% del ancho)
+        # Botón Toggle MP4 / MP3
         self.format_toggle_btn = Button(
             text="MP4", font_size='16sp', bold=True, background_normal="", 
             background_color=(0, 0, 0, 1), color=(1, 1, 1, 1),
-            size_hint_x=0.25
+            size_hint_x=0.25, size_hint_y=None
         )
+        self.format_toggle_btn.bind(width=force_square)
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
-        # Agregamos los botones al contenedor horizontal
+        # Agregamos los botones
         buttons_top_layout.add_widget(self.paste_btn)
         buttons_top_layout.add_widget(self.clear_btn)
         buttons_top_layout.add_widget(self.open_folder_btn)
         buttons_top_layout.add_widget(self.format_toggle_btn)
         
-        # Agregamos la fila completa al layout principal
         layout_main.add_widget(buttons_top_layout)
 
         # Entrada de Texto de URL
@@ -164,7 +173,6 @@ class YTDownloaderX11(TabbedPanel):
         self.load_history_from_file(None)
 
     def toggle_format_mode(self, instance):
-        """ Alterna entre MP4 (Texto Blanco) y MP3 (Texto Azul) """
         self.download_mp3_mode = not self.download_mp3_mode
         if self.download_mp3_mode:
             self.format_toggle_btn.text = "MP3"
@@ -266,7 +274,7 @@ class YTDownloaderX11(TabbedPanel):
                 
                 current_activity = PythonActivity.mActivity
                 file_obj = File(file_path)
-                video_uri = Uri.fromFile(file_obj)
+                file_uri = Uri.fromFile(file_obj)
                 
                 intent = Intent(Intent.ACTION_VIEW)
                 intent.setDataAndType(file_uri, mime)
