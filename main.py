@@ -48,44 +48,46 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # --- NUEVO DISEÑO DE BOTONES: GRANDES, NEGROS Y A TODO ANCHO ---
-        # Botón Pegar enlace
+        # --- FILA DE BOTONES: NEGROS, CUADRADOS Y OCUPANDO TODO EL ANCHO ---
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=60, spacing=5)
+
+        # Botón Pegar (25% del ancho)
         self.paste_btn = Button(
-            text="\uf0ea  Pegar desde Portapapeles", font_name=FONT_PATH, 
-            background_normal="", background_color=(0, 0, 0, 1), 
-            color=(1, 1, 1, 1), size_hint_x=1, size_hint_y=None, height=55, font_size='16sp', bold=True
+            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1), 
+            color=(1, 1, 1, 1), size_hint_x=0.25, font_size='22sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar entrada
+        # Botón Limpiar (25% del ancho)
         self.clear_btn = Button(
-            text="\uf1f8  Limpiar Texto", font_name=FONT_PATH, 
-            background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_x=1, size_hint_y=None, height=55, font_size='16sp', bold=True
+            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
+            color=(1, 1, 1, 1), size_hint_x=0.25, font_size='22sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Abrir Carpeta de Descargas
+        # Botón Abrir Carpeta (25% del ancho)
         self.open_folder_btn = Button(
-            text="\uf07c  Abrir Carpeta Descargas", font_name=FONT_PATH, 
-            background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_x=1, size_hint_y=None, height=55, font_size='16sp', bold=True
+            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
+            color=(1, 1, 1, 1), size_hint_x=0.25, font_size='22sp'
         )
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
-        # Botón Toggle MP4 / MP3 (Letras blancas inicialmente por estar en MP4)
+        # Botón Toggle MP4 / MP3 (25% del ancho)
         self.format_toggle_btn = Button(
-            text="\uf013  Formato Actual: MP4", font_name=FONT_PATH,
-            background_normal="", background_color=(0, 0, 0, 1), 
-            color=(1, 1, 1, 1), size_hint_x=1, size_hint_y=None, height=55, font_size='16sp', bold=True
+            text="MP4", font_size='16sp', bold=True, background_normal="", 
+            background_color=(0, 0, 0, 1), color=(1, 1, 1, 1),
+            size_hint_x=0.25
         )
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
-        # Añadimos los botones grandes directamente al layout principal uno debajo del otro
-        layout_main.add_widget(self.paste_btn)
-        layout_main.add_widget(self.clear_btn)
-        layout_main.add_widget(self.open_folder_btn)
-        layout_main.add_widget(self.format_toggle_btn)
+        # Agregamos los botones al contenedor horizontal
+        buttons_top_layout.add_widget(self.paste_btn)
+        buttons_top_layout.add_widget(self.clear_btn)
+        buttons_top_layout.add_widget(self.open_folder_btn)
+        buttons_top_layout.add_widget(self.format_toggle_btn)
+        
+        # Agregamos la fila completa al layout principal
+        layout_main.add_widget(buttons_top_layout)
 
         # Entrada de Texto de URL
         self.url_input = TextInput(
@@ -97,7 +99,7 @@ class YTDownloaderX11(TabbedPanel):
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # Botón de Descarga Principal (Negro y Cuadrado también)
+        # Botón de Descarga Principal
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=(0, 0, 0, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=60, font_size='18sp', bold=True
@@ -144,7 +146,7 @@ class YTDownloaderX11(TabbedPanel):
         self.scroll_hist.add_widget(self.history_container)
         layout_history.add_widget(self.scroll_hist)
         
-        # Botón Actualizar Historial (Negro Grande)
+        # Botón Actualizar Historial
         self.refresh_btn = Button(
             text="Actualizar Lista", background_normal="", background_color=(0, 0, 0, 1), 
             color=(1, 1, 1, 1), size_hint_y=None, height=52, bold=True
@@ -162,16 +164,16 @@ class YTDownloaderX11(TabbedPanel):
         self.load_history_from_file(None)
 
     def toggle_format_mode(self, instance):
-        """ Alterna entre formatos cambiando dinámicamente los textos y el color del texto solicitado """
+        """ Alterna entre MP4 (Texto Blanco) y MP3 (Texto Azul) """
         self.download_mp3_mode = not self.download_mp3_mode
         if self.download_mp3_mode:
-            self.format_toggle_btn.text = "\uf013  Formato Actual: MP3"
-            self.format_toggle_btn.color = (0.2, 0.6, 1.0, 1) # Azul brillante para MP3
+            self.format_toggle_btn.text = "MP3"
+            self.format_toggle_btn.color = (0.2, 0.6, 1.0, 1) # Azul brillante solicitado
             self.download_btn.text = "Descargar Audio (MP3)"
             self.log("[color=66b3ff][*] Modo de descarga cambiado a AUDIO (MP3).[/color]")
         else:
-            self.format_toggle_btn.text = "\uf013  Formato Actual: MP4"
-            self.format_toggle_btn.color = (1, 1, 1, 1) # Blanco puro para MP4
+            self.format_toggle_btn.text = "MP4"
+            self.format_toggle_btn.color = (1, 1, 1, 1) # Blanco puro solicitado
             self.download_btn.text = "Descargar Video (MP4)"
             self.log("[color=ffffff][*] Modo de descarga cambiado a VIDEO (MP4).[/color]")
 
