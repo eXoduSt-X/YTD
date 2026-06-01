@@ -35,11 +35,12 @@ class YTDownloaderX11(TabbedPanel):
         
         self.last_checked_url = ""
         self.typing_timer = None 
+        self.download_mp3_mode = False  # Estado del interruptor MP3
 
         # PESTAÑA 1: DESCARGADOR PRINCIPAL
         self.tab_download = TabbedPanelItem(text='Descargar')
         self.tab_download.background_normal = ""
-        self.tab_download.background_color = (0.3, 0.18, 0.55, 1)
+        self.tab_download.background_color = (0.15, 0.15, 0.16, 1)
         
         layout_main = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
 
@@ -47,34 +48,47 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=15)
-        buttons_top_layout.width = 255  
+        # Layout superior expandido para alojar 4 botones en lugar de 3
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint=(None, None), height=54, spacing=12)
+        buttons_top_layout.width = 330  
         buttons_top_layout.pos_hint = {'center_x': 0.5}
 
+        # Botón Pegar (Gris Oscuro)
         self.paste_btn = Button(
-            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1), 
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
+            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0.18, 0.18, 0.2, 1), 
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=70, font_size='20sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
+        # Botón Limpiar (Gris Oscuro)
         self.clear_btn = Button(
-            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
+            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0.18, 0.18, 0.2, 1),
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=70, font_size='20sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
+        # Botón Abrir Carpeta (Gris Oscuro)
         self.open_folder_btn = Button(
-            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.48, 0.3, 1.0, 1),
-            color=(1, 1, 1, 1), size_hint=(None, 1), width=75, font_size='22sp'
+            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0.18, 0.18, 0.2, 1),
+            color=(1, 1, 1, 1), size_hint=(None, 1), width=70, font_size='20sp'
         )
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
+
+        # NUEVO: Botón Interruptor Formato MP3 / MP4 (Gris Oscuro con indicador de estado inicial)
+        self.format_toggle_btn = Button(
+            text="MP4", font_size='14sp', bold=True, background_normal="", 
+            background_color=(0.18, 0.18, 0.2, 1), color=(0.6, 0.8, 1, 1),
+            size_hint=(None, 1), width=70
+        )
+        self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
         buttons_top_layout.add_widget(self.paste_btn)
         buttons_top_layout.add_widget(self.clear_btn)
         buttons_top_layout.add_widget(self.open_folder_btn)
+        buttons_top_layout.add_widget(self.format_toggle_btn)
         layout_main.add_widget(buttons_top_layout)
 
-        # Ajuste en alto (62) y padding optimizado para corregir visibilidad del link
+        # Entrada de Texto de URL
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", multiline=False, padding=[12, 14, 12, 14],
             background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
@@ -84,8 +98,9 @@ class YTDownloaderX11(TabbedPanel):
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
+        # Botón de Descarga Principal (Gris Oscuro Dinámico)
         self.download_btn = Button(
-            text="Descargar Video (MP4)", background_normal="", background_color=(0.48, 0.3, 1.0, 1),
+            text="Descargar Video (MP4)", background_normal="", background_color=(0.18, 0.18, 0.2, 1),
             color=(1, 1, 1, 1), size_hint_y=None, height=56, font_size='18sp', bold=True
         )
         self.download_btn.bind(on_press=self.start_download_thread)
@@ -108,7 +123,7 @@ class YTDownloaderX11(TabbedPanel):
         # PESTAÑA 2: HISTORIAL INTERACTIVO
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
-        self.tab_history.background_color = (0.2, 0.15, 0.35, 1)
+        self.tab_history.background_color = (0.12, 0.12, 0.13, 1)
         
         layout_history = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
         
@@ -129,8 +144,9 @@ class YTDownloaderX11(TabbedPanel):
         self.scroll_hist.add_widget(self.history_container)
         layout_history.add_widget(self.scroll_hist)
         
+        # Botón Actualizar Historial (Gris Oscuro)
         self.refresh_btn = Button(
-            text="Actualizar Lista", background_normal="", background_color=(0.48, 0.3, 1.0, 1), size_hint_y=None, height=48, bold=True
+            text="Actualizar Lista", background_normal="", background_color=(0.18, 0.18, 0.2, 1), size_hint_y=None, height=48, bold=True
         )
         self.refresh_btn.bind(on_press=self.load_history_from_file)
         layout_history.add_widget(self.refresh_btn)
@@ -143,6 +159,20 @@ class YTDownloaderX11(TabbedPanel):
         Clock.schedule_once(self.force_initial_tab, 0.1)
         Clock.schedule_once(self.check_shared_intent, 0.5)
         self.load_history_from_file(None)
+
+    def toggle_format_mode(self, instance):
+        """ Alterna el modo de descarga entre MP4 y MP3 """
+        self.download_mp3_mode = not self.download_mp3_mode
+        if self.download_mp3_mode:
+            self.format_toggle_btn.text = "MP3"
+            self.format_toggle_btn.color = (1, 0.4, 0.4, 1) # Rojo suave para distinguir MP3
+            self.download_btn.text = "Descargar Audio (MP3)"
+            self.log("[color=ff8888][*] Modo de descarga cambiado a AUDIO (MP3).[/color]")
+        else:
+            self.format_toggle_btn.text = "MP4"
+            self.format_toggle_btn.color = (0.6, 0.8, 1, 1) # Azul suave para MP4
+            self.download_btn.text = "Descargar Video (MP4)"
+            self.log("[color=88ccff][*] Modo de descarga cambiado a VIDEO (MP4).[/color]")
 
     def force_initial_tab(self, dt):
         self.switch_to(self.tab_download)
@@ -170,7 +200,6 @@ class YTDownloaderX11(TabbedPanel):
             pass
 
     def open_downloads_in_player(self, instance):
-        """ Abre el menú 'Abrir con...' para elegir qué explorador usar en la carpeta Download """
         try:
             from jnius import autoclass
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -206,17 +235,21 @@ class YTDownloaderX11(TabbedPanel):
                 self.log(f"[X] No se pudo lanzar el selector de archivos: {str(err)}")
 
     def play_specific_video(self, clean_title):
-        """ Localiza el archivo de video y lo ejecuta mediante un Intent nativo seguro """
-        base_name = clean_title.replace(".mp4", "").replace(".mkv", "").strip()
-        video_path = os.path.join(DOWNLOADS_DIR, f"{base_name}.mp4")
+        """ Determina de manera inteligente si es MP3 o MP4 y lo lanza con el Intent nativo correcto """
+        is_mp3 = clean_title.endswith('.mp3')
+        ext = '.mp3' if is_mp3 else '.mp4'
+        mime = 'audio/*' if is_mp3 else 'video/*'
+        
+        base_name = clean_title.replace(".mp4", "").replace(".mp3", "").replace(".mkv", "").strip()
+        file_path = os.path.join(DOWNLOADS_DIR, f"{base_name}{ext}")
 
-        if not os.path.exists(video_path) and os.path.exists(DOWNLOADS_DIR):
+        if not os.path.exists(file_path) and os.path.exists(DOWNLOADS_DIR):
             for file_in_dir in os.listdir(DOWNLOADS_DIR):
-                if file_in_dir.lower().startswith(base_name.lower()[:15]) and file_in_dir.endswith('.mp4'):
-                    video_path = os.path.join(DOWNLOADS_DIR, file_in_dir)
+                if file_in_dir.lower().startswith(base_name.lower()[:15]) and file_in_dir.endswith(ext):
+                    file_path = os.path.join(DOWNLOADS_DIR, file_in_dir)
                     break
 
-        if os.path.exists(video_path):
+        if os.path.exists(file_path):
             try:
                 from jnius import autoclass
                 
@@ -230,14 +263,14 @@ class YTDownloaderX11(TabbedPanel):
                 StrictMode.disableDeathOnFileUriExposure()
                 
                 current_activity = PythonActivity.mActivity
-                file_obj = File(video_path)
-                video_uri = Uri.fromFile(file_obj)
+                file_obj = File(file_path)
+                file_uri = Uri.fromFile(file_obj)
                 
                 intent = Intent(Intent.ACTION_VIEW)
-                intent.setDataAndType(video_uri, "video/*")
+                intent.setDataAndType(file_uri, mime)
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
-                java_title = JavaString("Reproducir video con:")
+                java_title = JavaString(f"Reproducir {ext[1:]} con:")
                 
                 chooser_intent = Intent.createChooser(intent, java_title)
                 chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -247,7 +280,7 @@ class YTDownloaderX11(TabbedPanel):
             except Exception as e:
                 self.log(f"[X] Falló al iniciar el reproductor nativo: {str(e)}")
         else:
-            self.log(f"[color=ff5555][X] Archivo no hallado físicamente en Download:[/color]\n{base_name}.mp4")
+            self.log(f"[color=ff5555][X] Archivo no hallado físicamente en Download:[/color]\n{base_name}{ext}")
 
     def paste_from_native_clipboard(self, instance):
         try:
@@ -274,10 +307,11 @@ class YTDownloaderX11(TabbedPanel):
         self.log_label.text += f"\n{cleaned_text}"
         Clock.schedule_once(lambda dt: setattr(self.scroll, 'scroll_y', 0), 0.1)
 
-    def save_to_history_file(self, title):
+    def save_to_history_file(self, title, is_mp3=False):
+        ext_label = " (MP3)" if is_mp3 else " (MP4)"
         try:
             with open(HISTORY_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"OK - {title}\n")
+                f.write(f"OK - {title}{ext_label}\n")
             self.load_history_from_file(None)
             return
         except Exception as e:
@@ -285,7 +319,7 @@ class YTDownloaderX11(TabbedPanel):
 
         try:
             with open(BACKUP_HISTORY_FILE, 'a', encoding='utf-8') as f:
-                f.write(f"OK - {title}\n")
+                f.write(f"OK - {title}{ext_label}\n")
             self.load_history_from_file(None)
         except Exception as e:
             pass
@@ -303,16 +337,19 @@ class YTDownloaderX11(TabbedPanel):
                         text_line = line.strip()
                         if not text_line: continue
                         
-                        video_title = text_line.replace("OK - ", "").strip()
-                        if not video_title: continue
+                        raw_title = text_line.replace("OK - ", "").strip()
+                        if not raw_title: continue
                         
-                        if not video_title.endswith('.mp4'):
-                            display_text = f"{video_title}.mp4"
+                        # Manejo e identificación inteligente del tipo en la lista visual
+                        if " (MP3)" in raw_title:
+                            clean_title = raw_title.replace(" (MP3)", "") + ".mp3"
+                        elif " (MP4)" in raw_title:
+                            clean_title = raw_title.replace(" (MP4)", "") + ".mp4"
                         else:
-                            display_text = video_title
+                            clean_title = raw_title if (raw_title.endswith('.mp4') or raw_title.endswith('.mp3')) else f"{raw_title}.mp4"
                         
                         btn_video = Button(
-                            text=display_text,
+                            text=clean_title,
                             font_size='14sp',
                             size_hint_y=None,
                             height=58,
@@ -324,7 +361,7 @@ class YTDownloaderX11(TabbedPanel):
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
-                        btn_video.bind(on_press=lambda btn, t=video_title: self.play_specific_video(t))
+                        btn_video.bind(on_press=lambda btn, t=clean_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
             except Exception as e:
@@ -374,12 +411,16 @@ class YTDownloaderX11(TabbedPanel):
         url = self.url_input.text.strip()
         if not url: return
         self.download_btn.disabled = True
-        format_opt = 'b[ext=mp4]/best'
-        threading.Thread(target=self.download_video, args=(url, format_opt)).start()
+        
+        # Selección de perfil según el estado del Toggle
+        if self.download_mp3_mode:
+            threading.Thread(target=self.download_audio_mp3, args=(url,)).start()
+        else:
+            format_opt = 'b[ext=mp4]/best'
+            threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
     def download_video(self, url, format_opt):
         out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
-        
         ydl_opts = {
             'format': format_opt, 
             'outtmpl': out_template, 
@@ -389,22 +430,42 @@ class YTDownloaderX11(TabbedPanel):
             'socket_timeout': 60,
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
         }
+        self._execute_ydl(ydl_opts, url, is_mp3=False)
 
+    def download_audio_mp3(self, url):
+        """ Ejecuta la extracción limpia del flujo de audio directo sin depender de transcodificadores pesados """
+        out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.mp3')
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': out_template,
+            'logger': MyLogger(self),
+            'progress_hooks': [self.progress_hook],
+            'nocheckcertificate': True,
+            'socket_timeout': 60,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+            # Forzamos que guarde el contenedor original de audio mapeando la extensión a .mp3 para evitar errores de codificadores externos en Android
+            'keepvideo': False,
+        }
+        self._execute_ydl(ydl_opts, url, is_mp3=True)
+
+    def _execute_ydl(self, ydl_opts, url, is_mp3):
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                title = info.get('title', 'Video Descargado')
-            self.log("[color=55ff55][*] Descarga terminada con exito en 'Download'.[/color]")
-            self.save_to_history_file(title)
+                title = info.get('title', 'Archivo Descargado')
+            self.log(f"[color=55ff55][*] Descarga terminada con éxito en 'Download'.[/color]")
+            self.save_to_history_file(title, is_mp3=is_mp3)
         except Exception as e:
             try:
-                backup_path = os.path.join(BASE_DIR, '%(title)s.%(ext)s')
+                # Intento alternativo en almacenamiento interno de respaldo si falla Download directo
+                ext_str = ".mp3" if is_mp3 else ".%(ext)s"
+                backup_path = os.path.join(BASE_DIR, f"%(title)s{ext_str}")
                 ydl_opts['outtmpl'] = backup_path
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(url, download=True)
-                    title = info.get('title', 'Video Descargado')
+                    title = info.get('title', 'Archivo Descargado')
                 self.log("[color=55ff55][*] Guardado de respaldo local con éxito.[/color]")
-                self.save_to_history_file(title)
+                self.save_to_history_file(title, is_mp3=is_mp3)
             except Exception as err:
                 self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
         
