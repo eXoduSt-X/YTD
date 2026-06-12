@@ -45,7 +45,7 @@ class YTDownloaderX11(TabbedPanel):
         layout_main = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
 
         layout_main.add_widget(Label(
-            text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
+            text="Youtube Downloader", font_size='20sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
                 # --- FILA DE BOTONES: MODIFICADA ---
