@@ -48,46 +48,39 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # --- FILA DE BOTONES: DINÁMICAMENTE CUADRADOS (1:1) Y NEGROS ---
-        # Removimos el "height" fijo del contenedor para que crezca según sus hijos cuadrados
-        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, spacing=5)
-        # Sincroniza la altura del contenedor con la altura de uno de los botones cuadrados
-        buttons_top_layout.bind(minimum_height=buttons_top_layout.setter('height'))
+                # --- FILA DE BOTONES: MODIFICADA ---
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=31, spacing=5)
 
-        # Función lambda para forzar que el alto sea exactamente igual al ancho (1:1)
-        force_square = lambda instance, value: setattr(instance, 'height', value)
+        # Color gris oscuro solicitado (mismo que el input)
+        button_bg_color = (0.117, 0.117, 0.121, 1)
 
         # Botón Pegar
         self.paste_btn = Button(
-            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1), 
-            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
+            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=button_bg_color, 
+            color=(1, 1, 1, 1), size_hint=(0.25, None), height=31, font_size='18sp'
         )
-        self.paste_btn.bind(width=force_square)
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
         # Botón Limpiar
         self.clear_btn = Button(
-            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
+            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=button_bg_color,
+            color=(1, 1, 1, 1), size_hint=(0.25, None), height=31, font_size='18sp'
         )
-        self.clear_btn.bind(width=force_square)
         self.clear_btn.bind(on_press=self.clear_input)
 
         # Botón Abrir Carpeta
         self.open_folder_btn = Button(
-            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
+            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=button_bg_color,
+            color=(1, 1, 1, 1), size_hint=(0.25, None), height=31, font_size='18sp'
         )
-        self.open_folder_btn.bind(width=force_square)
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
         # Botón Toggle MP4 / MP3
         self.format_toggle_btn = Button(
-            text="MP4", font_size='16sp', bold=True, background_normal="", 
-            background_color=(0, 0, 0, 1), color=(1, 1, 1, 1),
-            size_hint_x=0.25, size_hint_y=None
+            text="MP4", font_size='14sp', bold=True, background_normal="", 
+            background_color=button_bg_color, color=(1, 1, 1, 1),
+            size_hint=(0.25, None), height=31
         )
-        self.format_toggle_btn.bind(width=force_square)
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
         # Agregamos los botones
