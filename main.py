@@ -11,74 +11,90 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
+from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 from kivy.graphics import RoundedRectangle, Color
+from kivy.properties import ListProperty, NumericProperty
 import yt_dlp
+from kivy.config import Config
+Config.set('graphics', 'multisamples', '0')
+
 
 Window.size = (480, 800)
 
 # --- CONFIGURACIÓN GLOBAL DE COLOR ---
-# Fondo general de la App (igual al fondo oscuro de esta interfaz)
-Window.clear_color = (0.10, 0.10, 0.11, 1)  # #1a1a1a aproximado
+Window.clear_color = (0.10, 0.10, 0.11, 1)
 
-# Color para botones y campos de entrada (gris de la caja de texto de Kimi)
-CONTROL_BG = (0.22, 0.23, 0.25, 1)  # Gris azulado oscuro tipo input field
-
-# Color de acento para estados activos
-ACCENT_COLOR = (0.2, 0.6, 1.0, 1)  # Azul brillante para MP3
-TEXT_COLOR = (0.95, 0.95, 0.97, 1)  # Blanco suave
+# Color gris oscuro tipo input (igual a tu caja de texto)
+CONTROL_BG = (0.22, 0.23, 0.25, 1)
+ACCENT_COLOR = (0.2, 0.6, 1.0, 1)
+TEXT_COLOR = (0.95, 0.95, 0.97, 1)
 
 DOWNLOADS_DIR = '/storage/emulated/0/Download'
 HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
-
-# Ruta fija de la tipografía local Font Awesome
 FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
 
 class RoundedButton(Button):
-    """Botón con bordes redondeados que coincide con el estilo de la interfaz"""
+    bg_color = ListProperty(CONTROL_BG)
+    radius = NumericProperty(12)
+    
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.background_normal = ""
-        self.background_color = (0, 0, 0, 0)  # Transparente para usar canvas
-        self.color = TEXT_COLOR
-        self.bind(pos=self.update_canvas, size=self.update_canvas)
-        self.corner_radius = 12  # Radio de redondeo similar a los botones de Kimi
+        self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
+        self.radius = kwargs.pop('radius', 12)
+        kwargs['background_normal'] = ''
+        kwargs['background_color'] = (0, 0, 0, 0)
+        super(RoundedButton, self).__init__(**kwargs)
+        self.color = kwargs.get('color', TEXT_COLOR)
+        Clock.schedule_once(self._draw_background, 0)
         
-    def update_canvas(self, *args):
+    def _draw_background(self, *args):
         self.canvas.before.clear()
         with self.canvas.before:
-            Color(*CONTROL_BG)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[self.corner_radius]*4)
+            Color(*self.bg_color)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[self.radius]*4)
+        self.bind(pos=self._update_rect, size=self._update_rect)
+        
+    def _update_rect(self, instance, value):
+        if hasattr(self, 'rect'):
+            self.rect.pos = instance.pos
+            self.rect.size = instance.size
 
 class RoundedTextInput(TextInput):
-    """Campo de texto con bordes redondeados"""
+    bg_color = ListProperty(CONTROL_BG)
+    radius = NumericProperty(12)
+    
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.background_active = ""
-        self.background_normal = ""
-        self.background_color = (0, 0, 0, 0)
-        self.foreground_color = TEXT_COLOR
-        self.hint_text_color = (0.5, 0.5, 0.55, 1)
-        self.padding = [15, 15, 15, 15]
-        self.bind(pos=self.update_canvas, size=self.update_canvas)
-        self.corner_radius = 12
+        self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
+        self.radius = kwargs.pop('radius', 12)
+        kwargs['background_active'] = ''
+        kwargs['background_normal'] = ''
+        kwargs['background_color'] = (0, 0, 0, 0)
+        kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
+        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.55, 1))
+        kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
+        super(RoundedTextInput, self).__init__(**kwargs)
+        Clock.schedule_once(self._draw_background, 0)
         
-    def update_canvas(self, *args):
+    def _draw_background(self, *args):
         self.canvas.before.clear()
         with self.canvas.before:
-            Color(*CONTROL_BG)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[self.corner_radius]*4)
+            Color(*self.bg_color)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[self.radius]*4)
+        self.bind(pos=self._update_rect, size=self._update_rect)
+        
+    def _update_rect(self, instance, value):
+        if hasattr(self, 'rect'):
+            self.rect.pos = instance.pos
+            self.rect.size = instance.size
 
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(YTDownloaderX11, self).__init__(**kwargs)
         self.do_default_tab = False
-        
         self.last_checked_url = ""
         self.typing_timer = None 
         self.download_mp3_mode = False
@@ -94,35 +110,30 @@ class YTDownloaderX11(TabbedPanel):
             text="Youtube Downloader", font_size='22sp', size_hint_y=None, height=50, bold=True, color=TEXT_COLOR
         ))
 
-        # --- FILA DE BOTONES REDONDEADOS ---
+        # --- FILA DE BOTONES ---
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=62, spacing=8)
 
-        btn_args = {
-            'font_name': FONT_PATH, 
-            'color': TEXT_COLOR, 
-            'size_hint': (0.25, None), 
-            'height': 62, 
-            'font_size': '22sp',
-            'corner_radius': 10
-        }
-
-        self.paste_btn = RoundedButton(text="\uf0ea", **btn_args)
+        self.paste_btn = RoundedButton(
+            text="\uf0ea", font_name=FONT_PATH, size_hint=(0.25, None), 
+            height=62, font_size='22sp', radius=10
+        )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        self.clear_btn = RoundedButton(text="\uf1f8", **btn_args)
+        self.clear_btn = RoundedButton(
+            text="\uf1f8", font_name=FONT_PATH, size_hint=(0.25, None), 
+            height=62, font_size='22sp', radius=10
+        )
         self.clear_btn.bind(on_press=self.clear_input)
 
-        self.open_folder_btn = RoundedButton(text="\uf07c", **btn_args)
+        self.open_folder_btn = RoundedButton(
+            text="\uf07c", font_name=FONT_PATH, size_hint=(0.25, None), 
+            height=62, font_size='22sp', radius=10
+        )
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
         self.format_toggle_btn = RoundedButton(
-            text="MP4", 
-            font_size='16sp', 
-            bold=True, 
-            color=TEXT_COLOR,
-            size_hint=(0.25, None), 
-            height=62,
-            corner_radius=10
+            text="MP4", font_size='16sp', bold=True, size_hint=(0.25, None), 
+            height=62, radius=10
         )
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
@@ -132,26 +143,18 @@ class YTDownloaderX11(TabbedPanel):
         buttons_top_layout.add_widget(self.format_toggle_btn)
         layout_main.add_widget(buttons_top_layout)
 
-        # Entrada de Texto Redondeada
+        # Entrada de Texto
         self.url_input = RoundedTextInput(
-            hint_text="Pega el link aquí...", 
-            multiline=False,
-            size_hint_y=None, 
-            height=62, 
-            font_size='16sp'
+            hint_text="Pega el link aquí...", multiline=False,
+            size_hint_y=None, height=62, font_size='16sp', radius=12
         )
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # Botón de Descarga Principal (más grande y prominente)
+        # Botón Principal
         self.download_btn = RoundedButton(
-            text="Descargar Video (MP4)",
-            color=TEXT_COLOR,
-            size_hint_y=None, 
-            height=85, 
-            font_size='18sp', 
-            bold=True,
-            corner_radius=16  # Más redondeado para el botón principal
+            text="Descargar Video (MP4)", size_hint_y=None, height=85, 
+            font_size='18sp', bold=True, radius=16
         )
         self.download_btn.bind(on_press=self.start_download_thread)
         layout_main.add_widget(self.download_btn)
@@ -160,14 +163,9 @@ class YTDownloaderX11(TabbedPanel):
         self.scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         self.log_label = Label(
             text="[color=888888][i] Esperando enlace de YouTube...[/i][/color]", 
-            font_size='15sp', 
-            size_hint_y=None, 
-            halign='left', 
-            valign='top', 
-            markup=True,
-            color=(0.7, 0.7, 0.75, 1)
+            font_size='15sp', size_hint_y=None, halign='left', valign='top', 
+            markup=True, color=(0.7, 0.7, 0.75, 1)
         )
-        
         self.log_label.bind(width=lambda inv, val: setattr(inv, 'text_size', (val, None)))
         self.log_label.bind(texture_size=lambda inv, val: setattr(inv, 'height', val[1]))
         
@@ -176,7 +174,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL
+        # PESTAÑA 2
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.12, 0.12, 0.13, 1)
@@ -184,38 +182,25 @@ class YTDownloaderX11(TabbedPanel):
         layout_history = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
         
         layout_history.add_widget(Label(
-            text="Descargas Completadas", 
-            font_size='20sp', 
-            size_hint_y=None, 
-            height=45, 
-            bold=True, 
-            color=TEXT_COLOR
+            text="Descargas Completadas", font_size='20sp', size_hint_y=None, 
+            height=45, bold=True, color=TEXT_COLOR
         ))
         
         layout_history.add_widget(Label(
             text="[color=888888][i]Toca un archivo para reproducirlo[/i][/color]",
-            font_size='12sp', 
-            size_hint_y=None, 
-            height=20, 
-            markup=True
+            font_size='12sp', size_hint_y=None, height=20, markup=True
         ))
         
         self.scroll_hist = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
-        
         self.history_container = BoxLayout(orientation='vertical', spacing=10, size_hint_y=None)
         self.history_container.bind(minimum_height=self.history_container.setter('height'))
         
         self.scroll_hist.add_widget(self.history_container)
         layout_history.add_widget(self.scroll_hist)
         
-        # Botón Actualizar Historial
         self.refresh_btn = RoundedButton(
-            text="Actualizar Lista",
-            color=TEXT_COLOR,
-            size_hint_y=None, 
-            height=55, 
-            bold=True,
-            corner_radius=12
+            text="Actualizar Lista", size_hint_y=None, height=55, 
+            bold=True, radius=12
         )
         self.refresh_btn.bind(on_press=self.load_history_from_file)
         layout_history.add_widget(self.refresh_btn)
@@ -277,7 +262,6 @@ class YTDownloaderX11(TabbedPanel):
             StrictMode = autoclass('android.os.StrictMode')
             
             StrictMode.disableDeathOnFileUriExposure()
-            
             folder_uri = Uri.parse(f"file://{DOWNLOADS_DIR}")
             
             intent = Intent(Intent.ACTION_VIEW)
@@ -319,7 +303,6 @@ class YTDownloaderX11(TabbedPanel):
         if os.path.exists(file_path):
             try:
                 from jnius import autoclass
-                
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
                 Uri = autoclass('android.net.Uri')
@@ -328,7 +311,6 @@ class YTDownloaderX11(TabbedPanel):
                 StrictMode = autoclass('android.os.StrictMode')
                 
                 StrictMode.disableDeathOnFileUriExposure()
-                
                 current_activity = PythonActivity.mActivity
                 file_obj = File(file_path)
                 file_uri = Uri.fromFile(file_obj)
@@ -338,7 +320,6 @@ class YTDownloaderX11(TabbedPanel):
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
                 java_title = JavaString(f"Reproducir {ext[1:]} con:")
-                
                 chooser_intent = Intent.createChooser(intent, java_title)
                 chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
@@ -424,7 +405,7 @@ class YTDownloaderX11(TabbedPanel):
                             padding=[15, 0],
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None),
-                            corner_radius=10
+                            radius=10
                         )
                         btn_video.bind(on_press=lambda btn, t=clean_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
