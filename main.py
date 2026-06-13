@@ -111,29 +111,29 @@ class YTDownloaderX11(TabbedPanel):
         ))
 
         # --- FILA DE BOTONES ---
-        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=62, spacing=8)
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=110, spacing=8)
 
         self.paste_btn = RoundedButton(
             text="\uf0ea", font_name=FONT_PATH, size_hint=(0.25, None), 
-            height=62, font_size='22sp', radius=10
+            height=110, font_size='22sp', radius=10
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
         self.clear_btn = RoundedButton(
             text="\uf1f8", font_name=FONT_PATH, size_hint=(0.25, None), 
-            height=62, font_size='22sp', radius=10
+            height=110, font_size='22sp', radius=10
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
         self.open_folder_btn = RoundedButton(
             text="\uf07c", font_name=FONT_PATH, size_hint=(0.25, None), 
-            height=62, font_size='22sp', radius=10
+            height=110, font_size='22sp', radius=10
         )
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
         self.format_toggle_btn = RoundedButton(
             text="MP4", font_size='16sp', bold=True, size_hint=(0.25, None), 
-            height=62, radius=10
+            height=110, radius=10
         )
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
@@ -146,14 +146,14 @@ class YTDownloaderX11(TabbedPanel):
         # Entrada de Texto
         self.url_input = RoundedTextInput(
             hint_text="Pega el link aquí...", multiline=False,
-            size_hint_y=None, height=62, font_size='16sp', radius=12
+            size_hint_y=None, height=110, font_size='16sp', radius=12
         )
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
         # Botón Principal
         self.download_btn = RoundedButton(
-            text="Descargar Video (MP4)", size_hint_y=None, height=85, 
+            text="Descargar Video (MP4)", size_hint_y=None, height=110, 
             font_size='18sp', bold=True, radius=16
         )
         self.download_btn.bind(on_press=self.start_download_thread)
