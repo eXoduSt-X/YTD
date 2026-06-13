@@ -17,12 +17,13 @@ from kivy.clock import Clock
 import yt_dlp
 
 Window.size = (480, 800)
-# --- CONFIGURACIÓN GLOBAL DE COLOR ---
-# Fondo general de la App (casi negro)
-Window.clear_color = (0.05, 0.05, 0.05, 1) 
 
-# Color para botones y campos de entrada (Gris más claro que el fondo)
-CONTROL_BG = (0.15, 0.15, 0.16, 1)
+# --- CONFIGURACIÓN GLOBAL DE COLOR ---
+# Fondo general de la App (gris oscuro)
+Window.clear_color = (0.12, 0.12, 0.13, 1)
+
+# Color para botones y campos de entrada (gris un poco más claro que el fondo)
+CONTROL_BG = (0.20, 0.20, 0.22, 1)
 DOWNLOADS_DIR = '/storage/emulated/0/Download'
 HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 
@@ -41,7 +42,7 @@ class YTDownloaderX11(TabbedPanel):
         self.typing_timer = None 
         self.download_mp3_mode = False  # Estado del interruptor MP3
 
-                # PESTAÑA 1
+        # PESTAÑA 1
         self.tab_download = TabbedPanelItem(text='Descargar')
         self.tab_download.background_normal = ""
         self.tab_download.background_color = CONTROL_BG
@@ -113,7 +114,7 @@ class YTDownloaderX11(TabbedPanel):
         # PESTAÑA 2: HISTORIAL INTERACTIVO
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
-        self.tab_history.background_color = (0.12, 0.12, 0.13, 1)
+        self.tab_history.background_color = (0.15, 0.15, 0.16, 1)
         
         layout_history = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
         
@@ -136,7 +137,7 @@ class YTDownloaderX11(TabbedPanel):
         
         # Botón Actualizar Historial
         self.refresh_btn = Button(
-            text="Actualizar Lista", background_normal="", background_color=(0, 0, 0, 1), 
+            text="Actualizar Lista", background_normal="", background_color=CONTROL_BG, 
             color=(1, 1, 1, 1), size_hint_y=None, height=52, bold=True
         )
         self.refresh_btn.bind(on_press=self.load_history_from_file)
@@ -345,7 +346,7 @@ class YTDownloaderX11(TabbedPanel):
                             valign='middle',
                             padding=[15, 0],
                             background_normal="",
-                            background_color=(0.12, 0.12, 0.14, 1),
+                            background_color=(0.18, 0.18, 0.20, 1),
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
