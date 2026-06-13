@@ -25,10 +25,10 @@ Config.set('graphics', 'multisamples', '0')
 Window.size = (480, 800)
 
 # --- CONFIGURACIÓN GLOBAL DE COLOR ---
-Window.clear_color = (0.10, 0.10, 0.11, 1)
+Window.clear_color = (0.03, 0.03, 0.04, 1)
 
 # Color gris oscuro tipo input (igual a tu caja de texto)
-CONTROL_BG = (0.22, 0.23, 0.25, 1)
+CONTROL_BG = (0.10, 0.10, 0.11, 1)
 ACCENT_COLOR = (0.2, 0.6, 1.0, 1)
 TEXT_COLOR = (0.95, 0.95, 0.97, 1)
 
