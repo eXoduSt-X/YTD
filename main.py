@@ -17,8 +17,12 @@ from kivy.clock import Clock
 import yt_dlp
 
 Window.size = (480, 800)
-Window.clear_color = (0.074, 0.074, 0.078, 1)
+# --- CONFIGURACIÓN GLOBAL DE COLOR ---
+# Fondo general de la App (casi negro)
+Window.clear_color = (0.05, 0.05, 0.05, 1) 
 
+# Color para botones y campos de entrada (Gris más claro que el fondo)
+CONTROL_BG = (0.15, 0.15, 0.16, 1)
 DOWNLOADS_DIR = '/storage/emulated/0/Download'
 HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 
@@ -37,10 +41,10 @@ class YTDownloaderX11(TabbedPanel):
         self.typing_timer = None 
         self.download_mp3_mode = False  # Estado del interruptor MP3
 
-        # PESTAÑA 1: DESCARGADOR PRINCIPAL
+                # PESTAÑA 1
         self.tab_download = TabbedPanelItem(text='Descargar')
         self.tab_download.background_normal = ""
-        self.tab_download.background_color = (0.15, 0.15, 0.16, 1)
+        self.tab_download.background_color = CONTROL_BG
         
         layout_main = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
 
@@ -48,58 +52,47 @@ class YTDownloaderX11(TabbedPanel):
             text="Youtube Downloader", font_size='20sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-                # --- FILA DE BOTONES: MODIFICADA ---
-        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=31, spacing=5)
+        # --- FILA DE BOTONES ---
+        buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, height=62, spacing=5)
 
-        # Color gris oscuro solicitado (mismo que el input)
-        button_bg_color = (0.117, 0.117, 0.121, 1)
+        # Usamos CONTROL_BG en todos los botones
+        btn_args = {'font_name': FONT_PATH, 'background_normal': "", 'background_color': CONTROL_BG, 'color': (1, 1, 1, 1), 'size_hint': (0.25, None), 'height': 62, 'font_size': '22sp'}
 
-        # Botón Pegar
-        self.paste_btn = Button(
-            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=button_bg_color, 
-            color=(1, 1, 1, 1), size_hint=(0.25, None), height=62, font_size='18sp'
-        )
+        self.paste_btn = Button(text="\uf0ea", **btn_args)
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
-        # Botón Limpiar
-        self.clear_btn = Button(
-            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=button_bg_color,
-            color=(1, 1, 1, 1), size_hint=(0.25, None), height=62, font_size='18sp'
-        )
+        self.clear_btn = Button(text="\uf1f8", **btn_args)
         self.clear_btn.bind(on_press=self.clear_input)
 
-        # Botón Abrir Carpeta
-        self.open_folder_btn = Button(
-            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=button_bg_color,
-            color=(1, 1, 1, 1), size_hint=(0.25, None), height=62, font_size='18sp'
-        )
+        self.open_folder_btn = Button(text="\uf07c", **btn_args)
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
-        # Botón Toggle MP4 / MP3
-        self.format_toggle_btn = Button(
-            text="MP4", font_size='14sp', bold=True, background_normal="", 
-            background_color=button_bg_color, color=(1, 1, 1, 1),
-            size_hint=(0.25, None), height=62
-        )
+        self.format_toggle_btn = Button(text="MP4", font_size='16sp', bold=True, background_normal="", background_color=CONTROL_BG, color=(1, 1, 1, 1), size_hint=(0.25, None), height=62)
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
-        # Agregamos los botones
         buttons_top_layout.add_widget(self.paste_btn)
         buttons_top_layout.add_widget(self.clear_btn)
         buttons_top_layout.add_widget(self.open_folder_btn)
         buttons_top_layout.add_widget(self.format_toggle_btn)
-        
         layout_main.add_widget(buttons_top_layout)
 
-        # Entrada de Texto de URL
+        # Entrada de Texto
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", multiline=False, padding=[12, 14, 12, 14],
-            background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
-            foreground_color=(0.9, 0.9, 0.9, 1), hint_text_color=(0.5, 0.5, 0.5, 1),
+            background_active="", background_normal="", background_color=CONTROL_BG,
+            foreground_color=(1, 1, 1, 1), hint_text_color=(0.6, 0.6, 0.6, 1),
             size_hint_y=None, height=62, font_size='16sp'
         )
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
+
+        # Botón de Descarga Principal
+        self.download_btn = Button(
+            text="Descargar Video (MP4)", background_normal="", background_color=CONTROL_BG,
+            color=(1, 1, 1, 1), size_hint_y=None, height=80, font_size='18sp', bold=True
+        )
+        self.download_btn.bind(on_press=self.start_download_thread)
+        layout_main.add_widget(self.download_btn)
 
         # Botón de Descarga Principal
         self.download_btn = Button(
