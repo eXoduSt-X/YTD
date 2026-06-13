@@ -94,13 +94,6 @@ class YTDownloaderX11(TabbedPanel):
         self.download_btn.bind(on_press=self.start_download_thread)
         layout_main.add_widget(self.download_btn)
 
-        # Botón de Descarga Principal
-        self.download_btn = Button(
-            text="Descargar Video (MP4)", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
-            color=(1, 1, 1, 1), size_hint_y=None, height=80, font_size='18sp', bold=True
-        )
-        self.download_btn.bind(on_press=self.start_download_thread)
-        layout_main.add_widget(self.download_btn)
 
         # Visor de Logs
         self.scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
