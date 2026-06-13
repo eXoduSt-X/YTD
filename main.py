@@ -57,21 +57,21 @@ class YTDownloaderX11(TabbedPanel):
         # Botón Pegar
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=button_bg_color, 
-            color=(1, 1, 1, 1), size_hint=(0.25, None), height=31, font_size='18sp'
+            color=(1, 1, 1, 1), size_hint=(0.25, None), height=62, font_size='18sp'
         )
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
 
         # Botón Limpiar
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=button_bg_color,
-            color=(1, 1, 1, 1), size_hint=(0.25, None), height=31, font_size='18sp'
+            color=(1, 1, 1, 1), size_hint=(0.25, None), height=62, font_size='18sp'
         )
         self.clear_btn.bind(on_press=self.clear_input)
 
         # Botón Abrir Carpeta
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=button_bg_color,
-            color=(1, 1, 1, 1), size_hint=(0.25, None), height=31, font_size='18sp'
+            color=(1, 1, 1, 1), size_hint=(0.25, None), height=62, font_size='18sp'
         )
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
@@ -79,7 +79,7 @@ class YTDownloaderX11(TabbedPanel):
         self.format_toggle_btn = Button(
             text="MP4", font_size='14sp', bold=True, background_normal="", 
             background_color=button_bg_color, color=(1, 1, 1, 1),
-            size_hint=(0.25, None), height=31
+            size_hint=(0.25, None), height=62
         )
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
@@ -103,8 +103,8 @@ class YTDownloaderX11(TabbedPanel):
 
         # Botón de Descarga Principal
         self.download_btn = Button(
-            text="Descargar Video (MP4)", background_normal="", background_color=(0, 0, 0, 1),
-            color=(1, 1, 1, 1), size_hint_y=None, height=60, font_size='18sp', bold=True
+            text="Descargar Video (MP4)", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
+            color=(1, 1, 1, 1), size_hint_y=None, height=80, font_size='18sp', bold=True
         )
         self.download_btn.bind(on_press=self.start_download_thread)
         layout_main.add_widget(self.download_btn)
