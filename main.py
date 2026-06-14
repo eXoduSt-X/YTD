@@ -74,7 +74,7 @@ class RoundedTextInput(TextInput):
         kwargs['background_normal'] = ''
         kwargs['background_color'] = (0, 0, 0, 0)
         kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
-        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.55, 1))
+        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.95, 0.95, 0.95, 1))
         kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
         super(RoundedTextInput, self).__init__(**kwargs)
         Clock.schedule_once(self._draw_background, 0)
