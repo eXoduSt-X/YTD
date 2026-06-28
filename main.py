@@ -64,7 +64,6 @@ class RoundedButton(Button):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
 
-from kivy.graphics.texture import Texture
 
 class RoundedTextInput(TextInput):
     bg_color = ListProperty(CONTROL_BG)
@@ -74,19 +73,11 @@ class RoundedTextInput(TextInput):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
-        # 1. Crear una textura blanca pura de 1x1 píxel en memoria
-        # Esto engaña a Kivy para que use nuestro canvas sin romper el renderizado de texto
-        tex = Texture.create(size=(1, 1))
-        tex.blit_buffer(b'\xff\xff\xff\xff', colorfmt='rgba', bufferfmt='ubyte')
+        # Eliminamos las texturas nativas por defecto usando una cadena vacía temporal
+        kwargs['background_normal'] = ''
+        kwargs['background_active'] = ''
+        kwargs['background_color'] = (1, 1, 1, 1) # Mantiene el multiplicador de color activo para el texto
         
-        # 2. Asignar esta textura blanca como los fondos nativos de Kivy
-        kwargs['background_normal'] = tex
-        kwargs['background_active'] = tex
-        
-        # 3. Ponemos el color de fondo nativo en blanco puro para que multiplique bien nuestra textura
-        kwargs['background_color'] = (1, 1, 1, 1)
-        
-        # 4. Forzar los colores correctos de texto antes del super
         kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
         kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
         kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
@@ -96,12 +87,21 @@ class RoundedTextInput(TextInput):
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
-        # Centrado vertical dinámico automático
         self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
         
-        # Dibujar el rectángulo redondeado real en el canvas base
-        Clock.schedule_once(self._draw_background, 0)
+        # Retrasamos la inyección segura de la textura y el fondo redondeado al siguiente frame gráfico
+        Clock.schedule_once(self._safe_graphics_setup, 0)
         
+    def _safe_graphics_setup(self, dt):
+        # Creamos la textura de memoria de forma segura ya con OpenGL inicializado
+        tex = Texture.create(size=(1, 1))
+        tex.blit_buffer(b'\xff\xff\xff\xff', colorfmt='rgba', bufferfmt='ubyte')
+        self.background_normal = tex
+        self.background_active = tex
+        
+        # Dibujamos nuestro fondo redondeado real detrás
+        self._draw_background()
+
     def _center_text_vertical(self, *args):
         vertical_padding = (self.height - self.line_height) / 2
         self.padding = [15, vertical_padding, 15, vertical_padding]
@@ -117,7 +117,8 @@ class RoundedTextInput(TextInput):
         if hasattr(self, 'rect'):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
-            
+
+
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
         super(YTDownloaderX11, self).__init__(**kwargs)
