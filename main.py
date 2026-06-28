@@ -73,10 +73,16 @@ class RoundedTextInput(TextInput):
         kwargs['background_active'] = ''
         kwargs['background_normal'] = ''
         kwargs['background_color'] = (0, 0, 0, 0)
-        kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
-        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.95, 0.95, 0.95, 1))
+        # No pasamos foreground_color en kwargs, lo aplicamos después
         kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
         super(RoundedTextInput, self).__init__(**kwargs)
+        
+        # Aplicar colores de texto DESPUÉS de super().__init__ como propiedades
+        self.foreground_color = kwargs.get('foreground_color', TEXT_COLOR)
+        self.hint_text_color = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
+        self.cursor_color = ACCENT_COLOR  # Cursor azul visible
+        self.selection_color = (*ACCENT_COLOR[:3], 0.3)  # Selección azul translúcida
+        
         Clock.schedule_once(self._draw_background, 0)
         
     def _draw_background(self, *args):
@@ -90,6 +96,7 @@ class RoundedTextInput(TextInput):
         if hasattr(self, 'rect'):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
+
 
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
