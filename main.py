@@ -70,18 +70,22 @@ class RoundedTextInput(TextInput):
     def __init__(self, **kwargs):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
+        
+        # Configuramos los parámetros visuales nativos obligatorios antes del super
         kwargs['background_active'] = ''
         kwargs['background_normal'] = ''
         kwargs['background_color'] = (0, 0, 0, 0)
-        # No pasamos foreground_color en kwargs, lo aplicamos después
         kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
+        
+        # PASAR LOS COLORES DIRECTAMENTE EN KWARGS para que Kivy los procese nativamente en el init
+        kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
+        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
+        
         super(RoundedTextInput, self).__init__(**kwargs)
         
-        # Aplicar colores de texto DESPUÉS de super().__init__ como propiedades
-        self.foreground_color = kwargs.get('foreground_color', TEXT_COLOR)
-        self.hint_text_color = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
-        self.cursor_color = ACCENT_COLOR  # Cursor azul visible
-        self.selection_color = (*ACCENT_COLOR[:3], 0.3)  # Selección azul translúcida
+        # El resto de propiedades de selección se mantienen igual
+        self.cursor_color = ACCENT_COLOR  
+        self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
         Clock.schedule_once(self._draw_background, 0)
         
@@ -96,7 +100,6 @@ class RoundedTextInput(TextInput):
         if hasattr(self, 'rect'):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
-
 
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
