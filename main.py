@@ -16,6 +16,7 @@ from kivy.core.window import Window
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 from kivy.graphics import RoundedRectangle, Color
+from kivy.graphics.texture import Texture
 from kivy.properties import ListProperty, NumericProperty
 import yt_dlp
 from kivy.config import Config
@@ -63,34 +64,42 @@ class RoundedButton(Button):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
 
+from kivy.graphics.texture import Texture
+
 class RoundedTextInput(TextInput):
     bg_color = ListProperty(CONTROL_BG)
     radius = NumericProperty(12)
-    
-    # Declaramos explícitamente las propiedades de color para forzar el refresco en Kivy
-    foreground_color = ListProperty(TEXT_COLOR)
-    hint_text_color = ListProperty((0.5, 0.5, 0.5, 1))
     
     def __init__(self, **kwargs):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
-        # Sobreescribimos los fondos por defecto de Kivy para usar el RoundedRectangle
-        kwargs['background_active'] = ''
-        kwargs['background_normal'] = ''
-        kwargs['background_color'] = (0, 0, 0, 0)
+        # 1. Crear una textura blanca pura de 1x1 píxel en memoria
+        # Esto engaña a Kivy para que use nuestro canvas sin romper el renderizado de texto
+        tex = Texture.create(size=(1, 1))
+        tex.blit_buffer(b'\xff\xff\xff\xff', colorfmt='rgba', bufferfmt='ubyte')
         
-        # Forzamos los colores correctos antes de inicializar la clase base
-        kwargs['foreground_color'] = self.foreground_color
-        kwargs['hint_text_color'] = self.hint_text_color
+        # 2. Asignar esta textura blanca como los fondos nativos de Kivy
+        kwargs['background_normal'] = tex
+        kwargs['background_active'] = tex
+        
+        # 3. Ponemos el color de fondo nativo en blanco puro para que multiplique bien nuestra textura
+        kwargs['background_color'] = (1, 1, 1, 1)
+        
+        # 4. Forzar los colores correctos de texto antes del super
+        kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
+        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
+        kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
         
         super(RoundedTextInput, self).__init__(**kwargs)
         
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
-        # Mantener el centrado vertical automático que ya calcula el espacio
+        # Centrado vertical dinámico automático
         self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
+        
+        # Dibujar el rectángulo redondeado real en el canvas base
         Clock.schedule_once(self._draw_background, 0)
         
     def _center_text_vertical(self, *args):
