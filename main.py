@@ -67,30 +67,33 @@ class RoundedTextInput(TextInput):
     bg_color = ListProperty(CONTROL_BG)
     radius = NumericProperty(12)
     
+    # Declaramos explícitamente las propiedades de color para forzar el refresco en Kivy
+    foreground_color = ListProperty(TEXT_COLOR)
+    hint_text_color = ListProperty((0.5, 0.5, 0.5, 1))
+    
     def __init__(self, **kwargs):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
+        # Sobreescribimos los fondos por defecto de Kivy para usar el RoundedRectangle
         kwargs['background_active'] = ''
         kwargs['background_normal'] = ''
         kwargs['background_color'] = (0, 0, 0, 0)
         
-        # Pasamos los colores nativos en el diccionario de configuración
-        kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
-        kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
+        # Forzamos los colores correctos antes de inicializar la clase base
+        kwargs['foreground_color'] = self.foreground_color
+        kwargs['hint_text_color'] = self.hint_text_color
         
         super(RoundedTextInput, self).__init__(**kwargs)
         
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
-        # Centrado vertical dinámico automático
+        # Mantener el centrado vertical automático que ya calcula el espacio
         self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
-        
         Clock.schedule_once(self._draw_background, 0)
         
     def _center_text_vertical(self, *args):
-        # Calcula el padding necesario para que el texto quede perfectamente centrado
         vertical_padding = (self.height - self.line_height) / 2
         self.padding = [15, vertical_padding, 15, vertical_padding]
         
