@@ -71,23 +71,28 @@ class RoundedTextInput(TextInput):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
-        # Configuramos los parámetros visuales nativos obligatorios antes del super
         kwargs['background_active'] = ''
         kwargs['background_normal'] = ''
         kwargs['background_color'] = (0, 0, 0, 0)
-        kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
         
-        # PASAR LOS COLORES DIRECTAMENTE EN KWARGS para que Kivy los procese nativamente en el init
+        # Pasamos los colores nativos en el diccionario de configuración
         kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
         kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
         
         super(RoundedTextInput, self).__init__(**kwargs)
         
-        # El resto de propiedades de selección se mantienen igual
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
+        # Centrado vertical dinámico automático
+        self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
+        
         Clock.schedule_once(self._draw_background, 0)
+        
+    def _center_text_vertical(self, *args):
+        # Calcula el padding necesario para que el texto quede perfectamente centrado
+        vertical_padding = (self.height - self.line_height) / 2
+        self.padding = [15, vertical_padding, 15, vertical_padding]
         
     def _draw_background(self, *args):
         self.canvas.before.clear()
@@ -100,7 +105,7 @@ class RoundedTextInput(TextInput):
         if hasattr(self, 'rect'):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
-
+            
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
         super(YTDownloaderX11, self).__init__(**kwargs)
