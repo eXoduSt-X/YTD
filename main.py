@@ -73,12 +73,13 @@ class RoundedTextInput(TextInput):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
-        # Forzamos a que use el multiplicador de color nativo transparente.
-        # De esta forma Kivy NO busca texturas ni intenta crearlas en memoria.
-        kwargs['background_color'] = (0, 0, 0, 0)
+        # Desactivamos los gráficos por defecto para evitar que use las imágenes cuadradas nativas
         kwargs['background_normal'] = ''
         kwargs['background_active'] = ''
+        kwargs['background_disabled_normal'] = ''
         
+        # Mantenemos el fondo nativo en blanco para que Kivy pueda limpiar la pantalla correctamente
+        kwargs['background_color'] = (1, 1, 1, 1)
         kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
         kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
         kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
@@ -88,29 +89,24 @@ class RoundedTextInput(TextInput):
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
-        # Centrado vertical del texto
+        # Centrado vertical automático del texto
         self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
-        
-        # Dibujamos el fondo redondeado directamente en el canvas de fondo
-        self._draw_background()
-        
+
     def _center_text_vertical(self, *args):
         vertical_padding = (self.height - self.line_height) / 2
         self.padding = [15, vertical_padding, 15, vertical_padding]
-        
-    def _draw_background(self, *args):
-        self.canvas.before.clear()
-        with self.canvas.before:
-            Color(*self.bg_color)
-            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[self.radius]*4)
-        # Sincroniza la posición y tamaño de la caja si la app rota o cambia de tamaño
-        self.bind(pos=self._update_rect, size=self._update_rect)
-        
-    def _update_rect(self, instance, value):
-        if hasattr(self, 'rect'):
-            self.rect.pos = instance.pos
-            self.rect.size = instance.size
 
+    # SOBREESCRITURA CRÍTICA: Cambiamos cómo Kivy dibuja el fondo nativo del TextInput
+    def draw_background(self, canvas, chunk):
+        if canvas is None:
+            return
+            
+        with canvas:
+            # Establecemos el color gris oscuro de tu paleta
+            Color(*self.bg_color)
+            
+            # Dibujamos el fondo redondeado usando las dimensiones exactas del widget
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[self.radius] * 4)
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
         super(YTDownloaderX11, self).__init__(**kwargs)
