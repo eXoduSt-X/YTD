@@ -16,7 +16,7 @@ from kivy.core.window import Window
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 from kivy.graphics import RoundedRectangle, Color
-from kivy.graphics.fbo import Fbo  # IMPORTACIÓN CRÍTICA PARA EL FIX GRÁFICO
+from kivy.graphics.fbo import Fbo
 from kivy.graphics.texture import Texture
 from kivy.properties import ListProperty, NumericProperty
 import yt_dlp
@@ -66,9 +66,6 @@ class RoundedButton(Button):
             self.rect.size = instance.size
 
 
-# =============================================================================
-# COMPONENTE REESTRUCTURADO Y CORREGIDO PARA EVITAR GLITCHES EN ANDROID
-# =============================================================================
 class RoundedTextInput(TextInput):
     bg_color = ListProperty(CONTROL_BG)
     radius = NumericProperty(12)
@@ -77,21 +74,16 @@ class RoundedTextInput(TextInput):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
-        # Ajustamos los valores tipográficos por defecto
         kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
         kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
         kwargs['padding'] = kwargs.get('padding', [15, 15, 15, 15])
         
         super(RoundedTextInput, self).__init__(**kwargs)
         
-        # Colores para el cursor y para la barra selectora de Android de manera limpia
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
-        # Centrado vertical automático del texto
         self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
-        
-        # Enlazamos la regeneración de texturas dinámicas cuando cambia el layout
         self.bind(size=self._refresh_background, pos=self._refresh_background)
 
     def _center_text_vertical(self, *args):
@@ -99,19 +91,15 @@ class RoundedTextInput(TextInput):
         self.padding = [15, vertical_padding, 15, vertical_padding]
 
     def _refresh_background(self, *args):
-        # Previene ejecuciones inválidas en fases de inicialización sin dimensiones
         if self.width <= 0 or self.height <= 0:
             return
             
-        # Creamos una textura Fbo en memoria gráfica con las esquinas redondeadas
         fbo = Fbo(size=self.size)
         with fbo:
             Color(*self.bg_color)
             RoundedRectangle(pos=(0, 0), size=self.size, radius=[self.radius] * 4)
         fbo.draw()
         
-        # Asignamos la textura generada directamente a las propiedades de Kivy.
-        # De esta manera, Kivy refresca y vacía los residuos gráficos de selección de Android.
         self.background_normal = fbo.texture
         self.background_active = fbo.texture
 
@@ -566,5 +554,3 @@ class YTDownloaderApp(App):
 
 if __name__ == '__main__':
     YTDownloaderApp().run()
-
-```
