@@ -18,7 +18,8 @@ source.include_exts = py,png,jpg,kv,atlas,txt,ttf
 version = 1.0
 
 # (list) Application requirements
-requirements = python3,kivy,yt_dlp,pyopenssl,certifi,urllib3
+# NOTA: Añadidos pyopenssl y openssl para evitar crashes en las conexiones HTTPS de yt_dlp
+requirements = python3,kivy,yt_dlp,certifi,urllib3,pyopenssl,openssl
 
 # (str) Supported orientations
 orientation = portrait
@@ -37,8 +38,8 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 21
 
-# Filtro de intención para aparecer directamente al presionar "Compartir" en YouTube
-android.intent_filters = [ {"name": "org.exodust.youtubedownloader.ShareActivity", "actions": ["android.intent.action.SEND"], "categories": ["android.intent.category.DEFAULT"], "data": {"mimeType": "text/plain"}} ]
+# Filtro de intención corregido apuntando a la actividad principal de Kivy (PythonActivity)
+android.intent_filters = [{"actions": ["android.intent.action.SEND"], "categories": ["android.intent.category.DEFAULT"], "data": {"mimeType": "text/plain"}}]
 
 # (list) Target architectures
 android.archs = arm64-v8a
