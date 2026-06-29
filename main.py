@@ -1,10 +1,3 @@
-Aquí tienes tu archivo de código completo, unificado y corregido.
-
-Se ha reestructurado la clase `RoundedTextInput` utilizando la técnica de **Fbo** (FrameBuffer Object) e importando los módulos necesarios para la GPU. Esto genera el fondo redondeado directamente como una textura nativa en la memoria gráfica de Android, forzando al motor de Kivy a refrescar y limpiar la pantalla correctamente en cada fotograma. Así se eliminan por completo los caracteres fantasmas duplicados y los cuelgues visuales de las barras de selección azules al copiar o pegar texto.
-
-Copia este bloque completo y reemplaza todo tu script actual:
-
-```python
 import sys
 import threading
 import os
