@@ -52,16 +52,17 @@ class YTDownloaderX11(TabbedPanel):
             text="YTD Pro", font_size='24sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-        # --- FILA DE BOTONES: DINÁMICAMENTE CUADRADOS (1:1) Y NEGROS ---
+# --- FILA DE BOTONES: REDUCIDOS A LA MITAD DE TAMAÑO EN X ---
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, spacing=5)
         buttons_top_layout.bind(minimum_height=buttons_top_layout.setter('height'))
 
-        force_square = lambda instance, value: setattr(instance, 'height', value)
+        # Función lambda ajustada para calcular la mitad de la proporción original
+        force_square = lambda instance, value: setattr(instance, 'height', value * 0.5)
 
         # Botón Pegar
         self.paste_btn = Button(
             text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=COLOR_BOTONES, 
-            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
+            color=(1, 1, 1, 1), size_hint_x=0.125, size_hint_y=None, font_size='16sp'
         )
         self.paste_btn.bind(width=force_square)
         self.paste_btn.bind(on_press=self.paste_from_native_clipboard)
@@ -69,7 +70,7 @@ class YTDownloaderX11(TabbedPanel):
         # Botón Limpiar
         self.clear_btn = Button(
             text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=COLOR_BOTONES,
-            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
+            color=(1, 1, 1, 1), size_hint_x=0.125, size_hint_y=None, font_size='16sp'
         )
         self.clear_btn.bind(width=force_square)
         self.clear_btn.bind(on_press=self.clear_input)
@@ -77,16 +78,16 @@ class YTDownloaderX11(TabbedPanel):
         # Botón Abrir Carpeta
         self.open_folder_btn = Button(
             text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=COLOR_BOTONES,
-            color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
+            color=(1, 1, 1, 1), size_hint_x=0.125, size_hint_y=None, font_size='16sp'
         )
         self.open_folder_btn.bind(width=force_square)
         self.open_folder_btn.bind(on_press=self.open_downloads_in_player)
 
         # Botón Toggle MP4 / MP3
         self.format_toggle_btn = Button(
-            text="MP4", font_size='16sp', bold=True, background_normal="", 
+            text="MP4", font_size='12sp', bold=True, background_normal="", 
             background_color=COLOR_BOTONES, color=(1, 1, 1, 1),
-            size_hint_x=0.25, size_hint_y=None
+            size_hint_x=0.125, size_hint_y=None
         )
         self.format_toggle_btn.bind(width=force_square)
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
@@ -98,29 +99,29 @@ class YTDownloaderX11(TabbedPanel):
         
         layout_main.add_widget(buttons_top_layout)
 
-        # Entrada de Texto de URL (Configurada con los colores exactos solicitados)
+        # --- CUADRO DE TEXTO: ALTO DUPLICADO A 124 (Antes 62) ---
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", 
             multiline=False, 
-            padding=[12, 14, 12, 14],
+            padding=[12, 45, 12, 14],            # Ajuste de relleno vertical interno para centrar el texto
             background_active="", 
             background_normal="", 
-            background_color=COLOR_BOTONES,         # Mismo color que tus botones
-            foreground_color=(1, 1, 1, 1),          # Letras blancas al escribir
-            hint_text_color=(0.55, 0.55, 0.58, 1),   # Sugerencia gris claro legible
-            cursor_color=(1, 1, 1, 1),              # Cursor blanco
-            selection_color=(1, 1, 1, 0.2),         # Selección sutil
+            background_color=COLOR_BOTONES,
+            foreground_color=(1, 1, 1, 1),
+            hint_text_color=(0.55, 0.55, 0.58, 1),
+            cursor_color=(1, 1, 1, 1),
+            selection_color=(1, 1, 1, 0.2),
             size_hint_y=None, 
-            height=62, 
-            font_size='16sp'
+            height=124, 
+            font_size='18sp'
         )
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # Botón de Descarga Principal
+        # --- BOTÓN DE DESCARGA PRINCIPAL: ALTO DUPLICADO A 120 (Antes 60) ---
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=COLOR_BOTONES,
-            color=(1, 1, 1, 1), size_hint_y=None, height=60, font_size='18sp', bold=True
+            color=(1, 1, 1, 1), size_hint_y=None, height=120, font_size='20sp', bold=True
         )
         self.download_btn.bind(on_press=self.start_download_thread)
         layout_main.add_widget(self.download_btn)
