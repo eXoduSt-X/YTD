@@ -73,10 +73,11 @@ class RoundedTextInput(TextInput):
         self.bg_color = kwargs.pop('bg_color', CONTROL_BG)
         self.radius = kwargs.pop('radius', 12)
         
-        # Eliminamos las texturas nativas por defecto usando una cadena vacía temporal
+        # Forzamos a que use el multiplicador de color nativo transparente.
+        # De esta forma Kivy NO busca texturas ni intenta crearlas en memoria.
+        kwargs['background_color'] = (0, 0, 0, 0)
         kwargs['background_normal'] = ''
         kwargs['background_active'] = ''
-        kwargs['background_color'] = (1, 1, 1, 1) # Mantiene el multiplicador de color activo para el texto
         
         kwargs['foreground_color'] = kwargs.get('foreground_color', TEXT_COLOR)
         kwargs['hint_text_color'] = kwargs.get('hint_text_color', (0.5, 0.5, 0.5, 1))
@@ -87,21 +88,12 @@ class RoundedTextInput(TextInput):
         self.cursor_color = ACCENT_COLOR  
         self.selection_color = (*ACCENT_COLOR[:3], 0.3)  
         
+        # Centrado vertical del texto
         self.bind(height=self._center_text_vertical, font_size=self._center_text_vertical)
         
-        # Retrasamos la inyección segura de la textura y el fondo redondeado al siguiente frame gráfico
-        Clock.schedule_once(self._safe_graphics_setup, 0)
-        
-    def _safe_graphics_setup(self, dt):
-        # Creamos la textura de memoria de forma segura ya con OpenGL inicializado
-        tex = Texture.create(size=(1, 1))
-        tex.blit_buffer(b'\xff\xff\xff\xff', colorfmt='rgba', bufferfmt='ubyte')
-        self.background_normal = tex
-        self.background_active = tex
-        
-        # Dibujamos nuestro fondo redondeado real detrás
+        # Dibujamos el fondo redondeado directamente en el canvas de fondo
         self._draw_background()
-
+        
     def _center_text_vertical(self, *args):
         vertical_padding = (self.height - self.line_height) / 2
         self.padding = [15, vertical_padding, 15, vertical_padding]
@@ -111,13 +103,13 @@ class RoundedTextInput(TextInput):
         with self.canvas.before:
             Color(*self.bg_color)
             self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[self.radius]*4)
+        # Sincroniza la posición y tamaño de la caja si la app rota o cambia de tamaño
         self.bind(pos=self._update_rect, size=self._update_rect)
         
     def _update_rect(self, instance, value):
         if hasattr(self, 'rect'):
             self.rect.pos = instance.pos
             self.rect.size = instance.size
-
 
 class YTDownloaderX11(TabbedPanel):
     def __init__(self, **kwargs):
