@@ -16,8 +16,12 @@ from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 import yt_dlp
 
+# --- PALETA DE COLORES PERSONALIZADA ---
+COLOR_BOTONES = (0.125, 0.125, 0.13, 1)    # Gris oscuro mate de tus botones
+COLOR_FONDO_APP = (0.18, 0.18, 0.19, 1)   # Gris de fondo general de la app
+
 Window.size = (480, 800)
-Window.clear_color = (0.074, 0.074, 0.078, 1)
+Window.clear_color = COLOR_FONDO_APP
 
 DOWNLOADS_DIR = '/storage/emulated/0/Download'
 HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
@@ -49,17 +53,14 @@ class YTDownloaderX11(TabbedPanel):
         ))
 
         # --- FILA DE BOTONES: DINÁMICAMENTE CUADRADOS (1:1) Y NEGROS ---
-        # Removimos el "height" fijo del contenedor para que crezca según sus hijos cuadrados
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, spacing=5)
-        # Sincroniza la altura del contenedor con la altura de uno de los botones cuadrados
         buttons_top_layout.bind(minimum_height=buttons_top_layout.setter('height'))
 
-        # Función lambda para forzar que el alto sea exactamente igual al ancho (1:1)
         force_square = lambda instance, value: setattr(instance, 'height', value)
 
         # Botón Pegar
         self.paste_btn = Button(
-            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1), 
+            text="\uf0ea", font_name=FONT_PATH, background_normal="", background_color=COLOR_BOTONES, 
             color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
         )
         self.paste_btn.bind(width=force_square)
@@ -67,7 +68,7 @@ class YTDownloaderX11(TabbedPanel):
 
         # Botón Limpiar
         self.clear_btn = Button(
-            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
+            text="\uf1f8", font_name=FONT_PATH, background_normal="", background_color=COLOR_BOTONES,
             color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
         )
         self.clear_btn.bind(width=force_square)
@@ -75,7 +76,7 @@ class YTDownloaderX11(TabbedPanel):
 
         # Botón Abrir Carpeta
         self.open_folder_btn = Button(
-            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=(0, 0, 0, 1),
+            text="\uf07c", font_name=FONT_PATH, background_normal="", background_color=COLOR_BOTONES,
             color=(1, 1, 1, 1), size_hint_x=0.25, size_hint_y=None, font_size='22sp'
         )
         self.open_folder_btn.bind(width=force_square)
@@ -84,13 +85,12 @@ class YTDownloaderX11(TabbedPanel):
         # Botón Toggle MP4 / MP3
         self.format_toggle_btn = Button(
             text="MP4", font_size='16sp', bold=True, background_normal="", 
-            background_color=(0, 0, 0, 1), color=(1, 1, 1, 1),
+            background_color=COLOR_BOTONES, color=(1, 1, 1, 1),
             size_hint_x=0.25, size_hint_y=None
         )
         self.format_toggle_btn.bind(width=force_square)
         self.format_toggle_btn.bind(on_press=self.toggle_format_mode)
         
-        # Agregamos los botones
         buttons_top_layout.add_widget(self.paste_btn)
         buttons_top_layout.add_widget(self.clear_btn)
         buttons_top_layout.add_widget(self.open_folder_btn)
@@ -98,19 +98,28 @@ class YTDownloaderX11(TabbedPanel):
         
         layout_main.add_widget(buttons_top_layout)
 
-        # Entrada de Texto de URL
+        # Entrada de Texto de URL (Configurada con los colores exactos solicitados)
         self.url_input = TextInput(
-            hint_text="Pega el link aquí...", multiline=False, padding=[12, 14, 12, 14],
-            background_active="", background_normal="", background_color=(0.117, 0.117, 0.121, 1),
-            foreground_color=(0.9, 0.9, 0.9, 1), hint_text_color=(0.5, 0.5, 0.5, 1),
-            size_hint_y=None, height=62, font_size='16sp'
+            hint_text="Pega el link aquí...", 
+            multiline=False, 
+            padding=[12, 14, 12, 14],
+            background_active="", 
+            background_normal="", 
+            background_color=COLOR_BOTONES,         # Mismo color que tus botones
+            foreground_color=(1, 1, 1, 1),          # Letras blancas al escribir
+            hint_text_color=(0.55, 0.55, 0.58, 1),   # Sugerencia gris claro legible
+            cursor_color=(1, 1, 1, 1),              # Cursor blanco
+            selection_color=(1, 1, 1, 0.2),         # Selección sutil
+            size_hint_y=None, 
+            height=62, 
+            font_size='16sp'
         )
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
         # Botón de Descarga Principal
         self.download_btn = Button(
-            text="Descargar Video (MP4)", background_normal="", background_color=(0, 0, 0, 1),
+            text="Descargar Video (MP4)", background_normal="", background_color=COLOR_BOTONES,
             color=(1, 1, 1, 1), size_hint_y=None, height=60, font_size='18sp', bold=True
         )
         self.download_btn.bind(on_press=self.start_download_thread)
@@ -157,7 +166,7 @@ class YTDownloaderX11(TabbedPanel):
         
         # Botón Actualizar Historial
         self.refresh_btn = Button(
-            text="Actualizar Lista", background_normal="", background_color=(0, 0, 0, 1), 
+            text="Actualizar Lista", background_normal="", background_color=COLOR_BOTONES, 
             color=(1, 1, 1, 1), size_hint_y=None, height=52, bold=True
         )
         self.refresh_btn.bind(on_press=self.load_history_from_file)
@@ -366,7 +375,7 @@ class YTDownloaderX11(TabbedPanel):
                             valign='middle',
                             padding=[15, 0],
                             background_normal="",
-                            background_color=(0.12, 0.12, 0.14, 1),
+                            background_color=COLOR_BOTONES,
                             color=(0.9, 0.88, 0.95, 1),
                             text_size=(Window.width - 40, None)
                         )
