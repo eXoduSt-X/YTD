@@ -44,7 +44,7 @@ class YTDownloaderX11(TabbedPanel):
         # PESTAÑA 1: DESCARGADOR PRINCIPAL
         self.tab_download = TabbedPanelItem(text='Descargar')
         self.tab_download.background_normal = ""
-        self.tab_download.background_color = (0.15, 0.15, 0.16, 1)
+        self.tab_download.background_color = (0.18, 0.18, 0.19, 1)
         
         layout_main = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
 
@@ -144,7 +144,7 @@ class YTDownloaderX11(TabbedPanel):
         # PESTAÑA 2: HISTORIAL INTERACTIVO
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
-        self.tab_history.background_color = (0.12, 0.12, 0.13, 1)
+        self.tab_history.background_color = (0.18, 0.18, 0.19, 1)
         
         layout_history = BoxLayout(orientation='vertical', padding=20, spacing=15, size_hint=(1, 1))
         
