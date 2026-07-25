@@ -16,6 +16,25 @@ from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 import yt_dlp
 
+# ... código existente ...
+
+# --- NUEVA FUNCIÓN PARA TRUNCAR TÍTULOS ---
+MAX_FILENAME_LENGTH = 200  # Límite seguro para Android
+
+def safe_filename(title, extension):
+    """
+    Trunca el título a una longitud segura y elimina caracteres problemáticos.
+    """
+    # Eliminar caracteres no permitidos en nombres de archivo
+    invalid_chars = r'[<>:"/\\|?*]'
+    clean_title = re.sub(invalid_chars, '', title)
+    
+    # Truncar si es demasiado largo (reservando espacio para la extensión)
+    max_title_length = MAX_FILENAME_LENGTH - len(extension) - 1
+    if len(clean_title) > max_title_length:
+        clean_title = clean_title[:max_title_length]
+    
+    return clean_title
 # --- PALETA DE COLORES PERSONALIZADA ---
 COLOR_BOTONES = (0.125, 0.125, 0.13, 1)    # Gris oscuro mate de tus botones
 COLOR_FONDO_APP = (0.18, 0.18, 0.19, 1)   # Gris de fondo general de la app
@@ -437,54 +456,88 @@ class YTDownloaderX11(TabbedPanel):
             format_opt = 'b[ext=mp4]/best'
             threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
-    def download_video(self, url, format_opt):
+def download_video(self, url, format_opt):
+    # Primero obtén el título para truncarlo
+    try:
+        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+            info = ydl.extract_info(url, download=False)
+            raw_title = info.get('title', 'video')
+            safe_title = safe_filename(raw_title, '.mp4')
+            
+            out_template = os.path.join(DOWNLOADS_DIR, f'{safe_title}.%(ext)s')
+    except:
         out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
-        ydl_opts = {
-            'format': format_opt, 
-            'outtmpl': out_template, 
-            'logger': MyLogger(self),
-            'progress_hooks': [self.progress_hook], 
-            'nocheckcertificate': True, 
-            'socket_timeout': 60,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
-        }
-        self._execute_ydl(ydl_opts, url, is_mp3=False)
+    
+    ydl_opts = {
+        'format': format_opt, 
+        'outtmpl': out_template, 
+        'logger': MyLogger(self),
+        'progress_hooks': [self.progress_hook], 
+        'nocheckcertificate': True, 
+        'socket_timeout': 60,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+    }
+    self._execute_ydl(ydl_opts, url, is_mp3=False, safe_title=safe_title if 'safe_title' in locals() else None)
 
-    def download_audio_mp3(self, url):
+def download_audio_mp3(self, url):
+    # Primero obtén el título para truncarlo
+    try:
+        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+            info = ydl.extract_info(url, download=False)
+            raw_title = info.get('title', 'audio')
+            safe_title = safe_filename(raw_title, '.mp3')
+            
+            out_template = os.path.join(DOWNLOADS_DIR, f'{safe_title}.mp3')
+    except:
         out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.mp3')
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': out_template,
-            'logger': MyLogger(self),
-            'progress_hooks': [self.progress_hook],
-            'nocheckcertificate': True,
-            'socket_timeout': 60,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
-            'keepvideo': False,
-        }
-        self._execute_ydl(ydl_opts, url, is_mp3=True)
-
-    def _execute_ydl(self, ydl_opts, url, is_mp3):
+    
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': out_template,
+        'logger': MyLogger(self),
+        'progress_hooks': [self.progress_hook],
+        'nocheckcertificate': True,
+        'socket_timeout': 60,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+        'keepvideo': False,
+    }
+    self._execute_ydl(ydl_opts, url, is_mp3=True, safe_title=safe_title if 'safe_title' in locals() else None)
+    
+def _execute_ydl(self, ydl_opts, url, is_mp3, safe_title=None):
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            title = info.get('title', 'Archivo Descargado')
+            
+            # Si se proporcionó un safe_title, usarlo para el historial
+            if safe_title:
+                title = safe_title
+                
+        self.log(f"[color=55ff55][*] Descarga terminada con éxito en 'Download'.[/color]")
+        self.save_to_history_file(title, is_mp3=is_mp3)
+    except Exception as e:
         try:
+            # Si falla, intentar con respaldo usando el safe_title
+            if safe_title:
+                ext = '.mp3' if is_mp3 else '.%(ext)s'
+                backup_path = os.path.join(BASE_DIR, f"{safe_title}{ext}")
+            else:
+                ext_str = ".mp3" if is_mp3 else ".%(ext)s"
+                backup_path = os.path.join(BASE_DIR, f"%(title)s{ext_str}")
+            
+            ydl_opts['outtmpl'] = backup_path
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 title = info.get('title', 'Archivo Descargado')
-            self.log(f"[color=55ff55][*] Descarga terminada con éxito en 'Download'.[/color]")
+                if safe_title:
+                    title = safe_title
+                    
+            self.log("[color=55ff55][*] Guardado de respaldo local con éxito.[/color]")
             self.save_to_history_file(title, is_mp3=is_mp3)
-        except Exception as e:
-            try:
-                ext_str = ".mp3" if is_mp3 else ".%(ext)s"
-                backup_path = os.path.join(BASE_DIR, f"%(title)s{ext_str}")
-                ydl_opts['outtmpl'] = backup_path
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    title = info.get('title', 'Archivo Descargado')
-                self.log("[color=55ff55][*] Guardado de respaldo local con éxito.[/color]")
-                self.save_to_history_file(title, is_mp3=is_mp3)
-            except Exception as err:
-                self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
-        
-        self.download_btn.disabled = False
+        except Exception as err:
+            self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
+    
+    self.download_btn.disabled = False
 
     def progress_hook(self, d):
         if d['status'] == 'downloading':
