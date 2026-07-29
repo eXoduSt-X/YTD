@@ -16,28 +16,25 @@ from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 import yt_dlp
 
-# ... código existente ...
-
-# --- NUEVA FUNCIÓN PARA TRUNCAR TÍTULOS ---
+# --- FUNCIÓN PARA TRUNCAR TÍTULOS ---
 MAX_FILENAME_LENGTH = 200  # Límite seguro para Android
 
 def safe_filename(title, extension):
     """
     Trunca el título a una longitud segura y elimina caracteres problemáticos.
     """
-    # Eliminar caracteres no permitidos en nombres de archivo
     invalid_chars = r'[<>:"/\\|?*]'
     clean_title = re.sub(invalid_chars, '', title)
     
-    # Truncar si es demasiado largo (reservando espacio para la extensión)
     max_title_length = MAX_FILENAME_LENGTH - len(extension) - 1
     if len(clean_title) > max_title_length:
         clean_title = clean_title[:max_title_length]
     
     return clean_title
+
 # --- PALETA DE COLORES PERSONALIZADA ---
-COLOR_BOTONES = (0.125, 0.125, 0.13, 1)    # Gris oscuro mate de tus botones
-COLOR_FONDO_APP = (0.18, 0.18, 0.19, 1)   # Gris de fondo general de la app
+COLOR_BOTONES = (0.125, 0.125, 0.13, 1)    # Gris oscuro mate
+COLOR_FONDO_APP = (0.18, 0.18, 0.19, 1)   # Gris de fondo general
 
 Window.size = (480, 800)
 Window.clear_color = COLOR_FONDO_APP
@@ -48,7 +45,6 @@ HISTORY_FILE = os.path.join(DOWNLOADS_DIR, 'download_history.txt')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKUP_HISTORY_FILE = os.path.join(BASE_DIR, 'download_history.txt')
 
-# Ruta fija de la tipografía local Font Awesome
 FONT_PATH = os.path.join(BASE_DIR, "fontawesome.ttf")
 
 class YTDownloaderX11(TabbedPanel):
@@ -58,7 +54,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.last_checked_url = ""
         self.typing_timer = None 
-        self.download_mp3_mode = False  # Estado del interruptor MP3
+        self.download_mp3_mode = False
 
         # PESTAÑA 1: DESCARGADOR PRINCIPAL
         self.tab_download = TabbedPanelItem(text='Descargar')
@@ -71,11 +67,10 @@ class YTDownloaderX11(TabbedPanel):
             text="Youtube Downloader", font_size='14sp', size_hint_y=None, height=45, bold=True, color=(0.95, 0.95, 1, 1)
         ))
 
-# --- FILA DE BOTONES: REDUCIDOS A LA MITAD DE TAMAÑO EN X ---
+        # --- FILA DE BOTONES ---
         buttons_top_layout = BoxLayout(orientation='horizontal', size_hint_x=1, size_hint_y=None, spacing=5)
         buttons_top_layout.bind(minimum_height=buttons_top_layout.setter('height'))
 
-        # Función lambda ajustada para calcular la mitad de la proporción original
         force_square = lambda instance, value: setattr(instance, 'height', value * 0.5)
 
         # Botón Pegar
@@ -118,11 +113,11 @@ class YTDownloaderX11(TabbedPanel):
         
         layout_main.add_widget(buttons_top_layout)
 
-        # --- CUADRO DE TEXTO: ALTO DUPLICADO A 124 (Antes 62) ---
+        # --- CUADRO DE TEXTO ---
         self.url_input = TextInput(
             hint_text="Pega el link aquí...", 
             multiline=False, 
-            padding=[12, 45, 12, 14],            # Ajuste de relleno vertical interno para centrar el texto
+            padding=[12, 45, 12, 14],
             background_active="", 
             background_normal="", 
             background_color=COLOR_BOTONES,
@@ -137,7 +132,7 @@ class YTDownloaderX11(TabbedPanel):
         self.url_input.bind(text=self.on_url_text_change)
         layout_main.add_widget(self.url_input)
 
-        # --- BOTÓN DE DESCARGA PRINCIPAL: ALTO DUPLICADO A 120 (Antes 60) ---
+        # --- BOTÓN DE DESCARGA PRINCIPAL ---
         self.download_btn = Button(
             text="Descargar Video (MP4)", background_normal="", background_color=COLOR_BOTONES,
             color=(1, 1, 1, 1), size_hint_y=None, height=120, font_size='20sp', bold=True
@@ -160,7 +155,7 @@ class YTDownloaderX11(TabbedPanel):
         
         self.tab_download.content = layout_main
 
-        # PESTAÑA 2: HISTORIAL INTERACTIVO
+        # PESTAÑA 2: HISTORIAL
         self.tab_history = TabbedPanelItem(text='Historial')
         self.tab_history.background_normal = ""
         self.tab_history.background_color = (0.18, 0.18, 0.19, 1)
@@ -184,7 +179,6 @@ class YTDownloaderX11(TabbedPanel):
         self.scroll_hist.add_widget(self.history_container)
         layout_history.add_widget(self.scroll_hist)
         
-        # Botón Actualizar Historial
         self.refresh_btn = Button(
             text="Actualizar Lista", background_normal="", background_color=COLOR_BOTONES, 
             color=(1, 1, 1, 1), size_hint_y=None, height=52, bold=True
@@ -205,12 +199,12 @@ class YTDownloaderX11(TabbedPanel):
         self.download_mp3_mode = not self.download_mp3_mode
         if self.download_mp3_mode:
             self.format_toggle_btn.text = "MP3"
-            self.format_toggle_btn.color = (0.2, 0.6, 1.0, 1) # Azul brillante solicitado
+            self.format_toggle_btn.color = (0.2, 0.6, 1.0, 1)
             self.download_btn.text = "Descargar Audio (MP3)"
             self.log("[color=66b3ff][*] Modo de descarga cambiado a AUDIO (MP3).[/color]")
         else:
             self.format_toggle_btn.text = "MP4"
-            self.format_toggle_btn.color = (1, 1, 1, 1) # Blanco puro solicitado
+            self.format_toggle_btn.color = (1, 1, 1, 1)
             self.download_btn.text = "Descargar Video (MP4)"
             self.log("[color=ffffff][*] Modo de descarga cambiado a VIDEO (MP4).[/color]")
 
@@ -236,7 +230,7 @@ class YTDownloaderX11(TabbedPanel):
                         if urls:
                             self.url_input.text = urls[0]
                             self.log(f"[color=55ff55][*] Enlace recibido desde el menú Compartir.[/color]")
-        except Exception as e:
+        except Exception:
             pass
 
     def open_downloads_in_player(self, instance):
@@ -262,7 +256,7 @@ class YTDownloaderX11(TabbedPanel):
             
             PythonActivity.mActivity.startActivity(chooser_intent)
             return
-        except Exception as e:
+        except Exception:
             try:
                 intent = Intent(Intent.ACTION_GET_CONTENT)
                 intent.setType("*/*")
@@ -310,7 +304,6 @@ class YTDownloaderX11(TabbedPanel):
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 
                 java_title = JavaString(f"Reproducir {ext[1:]} con:")
-                
                 chooser_intent = Intent.createChooser(intent, java_title)
                 chooser_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 
@@ -327,7 +320,7 @@ class YTDownloaderX11(TabbedPanel):
             if contenido:
                 self.url_input.text = str(contenido).strip()
                 self.log("[color=bb99ff][*] Enlace pegado desde el portapapeles.[/color]")
-        except Exception as e:
+        except Exception:
             pass
 
     def clear_input(self, instance):
@@ -353,14 +346,14 @@ class YTDownloaderX11(TabbedPanel):
                 f.write(f"OK - {title}{ext_label}\n")
             self.load_history_from_file(None)
             return
-        except Exception as e:
+        except Exception:
             pass
 
         try:
             with open(BACKUP_HISTORY_FILE, 'a', encoding='utf-8') as f:
                 f.write(f"OK - {title}{ext_label}\n")
             self.load_history_from_file(None)
-        except Exception as e:
+        except Exception:
             pass
 
     def load_history_from_file(self, instance):
@@ -402,7 +395,7 @@ class YTDownloaderX11(TabbedPanel):
                         btn_video.bind(on_press=lambda btn, t=clean_title: self.play_specific_video(t))
                         self.history_container.add_widget(btn_video)
                     return
-            except Exception as e:
+            except Exception:
                 pass
                 
         self.history_container.add_widget(Label(
@@ -442,7 +435,7 @@ class YTDownloaderX11(TabbedPanel):
                 title = info.get('title', 'Desconocido')
                 duration = info.get('duration_string', '0:00')
                 self.log(f"\n[b][size=18sp][color=d1c4e9] Titulo: {title}[/color][/size][/b]\n[b][size=16sp][color=e1bee7] Duracion: {duration}[/color][/size][/b]\n")
-        except Exception as e:
+        except Exception:
             pass 
 
     def start_download_thread(self, instance):
@@ -456,88 +449,79 @@ class YTDownloaderX11(TabbedPanel):
             format_opt = 'b[ext=mp4]/best'
             threading.Thread(target=self.download_video, args=(url, format_opt)).start()
 
-def download_video(self, url, format_opt):
-    # Primero obtén el título para truncarlo
-    try:
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-            info = ydl.extract_info(url, download=False)
-            raw_title = info.get('title', 'video')
-            safe_title = safe_filename(raw_title, '.mp4')
-            
-            out_template = os.path.join(DOWNLOADS_DIR, f'{safe_title}.%(ext)s')
-    except:
-        out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
-    
-    ydl_opts = {
-        'format': format_opt, 
-        'outtmpl': out_template, 
-        'logger': MyLogger(self),
-        'progress_hooks': [self.progress_hook], 
-        'nocheckcertificate': True, 
-        'socket_timeout': 60,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
-    }
-    self._execute_ydl(ydl_opts, url, is_mp3=False, safe_title=safe_title if 'safe_title' in locals() else None)
-
-def download_audio_mp3(self, url):
-    # Primero obtén el título para truncarlo
-    try:
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-            info = ydl.extract_info(url, download=False)
-            raw_title = info.get('title', 'audio')
-            safe_title = safe_filename(raw_title, '.mp3')
-            
-            out_template = os.path.join(DOWNLOADS_DIR, f'{safe_title}.mp3')
-    except:
-        out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.mp3')
-    
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': out_template,
-        'logger': MyLogger(self),
-        'progress_hooks': [self.progress_hook],
-        'nocheckcertificate': True,
-        'socket_timeout': 60,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
-        'keepvideo': False,
-    }
-    self._execute_ydl(ydl_opts, url, is_mp3=True, safe_title=safe_title if 'safe_title' in locals() else None)
-    
-def _execute_ydl(self, ydl_opts, url, is_mp3, safe_title=None):
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            title = info.get('title', 'Archivo Descargado')
-            
-            # Si se proporcionó un safe_title, usarlo para el historial
-            if safe_title:
-                title = safe_title
-                
-        self.log(f"[color=55ff55][*] Descarga terminada con éxito en 'Download'.[/color]")
-        self.save_to_history_file(title, is_mp3=is_mp3)
-    except Exception as e:
+    # --- MÉTODOS DE DESCARGA DENTRO DE LA CLASE ---
+    def download_video(self, url, format_opt):
+        safe_title = None
         try:
-            # Si falla, intentar con respaldo usando el safe_title
-            if safe_title:
-                ext = '.mp3' if is_mp3 else '.%(ext)s'
-                backup_path = os.path.join(BASE_DIR, f"{safe_title}{ext}")
-            else:
-                ext_str = ".mp3" if is_mp3 else ".%(ext)s"
-                backup_path = os.path.join(BASE_DIR, f"%(title)s{ext_str}")
-            
-            ydl_opts['outtmpl'] = backup_path
+            with yt_dlp.YoutubeDL({'quiet': True, 'nocheckcertificate': True}) as ydl:
+                info = ydl.extract_info(url, download=False)
+                raw_title = info.get('title', 'video')
+                safe_title = safe_filename(raw_title, '.mp4')
+                out_template = os.path.join(DOWNLOADS_DIR, f'{safe_title}.%(ext)s')
+        except Exception:
+            out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
+        
+        ydl_opts = {
+            'format': format_opt, 
+            'outtmpl': out_template, 
+            'logger': MyLogger(self),
+            'progress_hooks': [self.progress_hook], 
+            'nocheckcertificate': True, 
+            'socket_timeout': 60,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+        }
+        self._execute_ydl(ydl_opts, url, is_mp3=False, safe_title=safe_title)
+
+    def download_audio_mp3(self, url):
+        safe_title = None
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True, 'nocheckcertificate': True}) as ydl:
+                info = ydl.extract_info(url, download=False)
+                raw_title = info.get('title', 'audio')
+                safe_title = safe_filename(raw_title, '.mp3')
+                out_template = os.path.join(DOWNLOADS_DIR, f'{safe_title}.%(ext)s')
+        except Exception:
+            out_template = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
+        
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': out_template,
+            'logger': MyLogger(self),
+            'progress_hooks': [self.progress_hook],
+            'nocheckcertificate': True,
+            'socket_timeout': 60,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+            'keepvideo': False,
+        }
+        self._execute_ydl(ydl_opts, url, is_mp3=True, safe_title=safe_title)
+        
+    def _execute_ydl(self, ydl_opts, url, is_mp3, safe_title=None):
+        try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                title = info.get('title', 'Archivo Descargado')
-                if safe_title:
-                    title = safe_title
+                title = safe_title if safe_title else info.get('title', 'Archivo Descargado')
                     
-            self.log("[color=55ff55][*] Guardado de respaldo local con éxito.[/color]")
+            self.log("[color=55ff55][*] Descarga terminada con éxito en 'Download'.[/color]")
             self.save_to_history_file(title, is_mp3=is_mp3)
-        except Exception as err:
-            self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
-    
-    self.download_btn.disabled = False
+        except Exception as e:
+            try:
+                ext_str = ".mp3" if is_mp3 else ".%(ext)s"
+                if safe_title:
+                    backup_path = os.path.join(BASE_DIR, f"{safe_title}{ext_str}")
+                else:
+                    backup_path = os.path.join(BASE_DIR, f"%(title)s{ext_str}")
+                
+                ydl_opts['outtmpl'] = backup_path
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    title = safe_title if safe_title else info.get('title', 'Archivo Descargado')
+                        
+                self.log("[color=55ff55][*] Guardado de respaldo local con éxito.[/color]")
+                self.save_to_history_file(title, is_mp3=is_mp3)
+            except Exception as err:
+                self.log(f"[color=ff5555][X] Fallo definitivo: {str(err)}[/color]")
+        
+        self.download_btn.disabled = False
 
     def progress_hook(self, d):
         if d['status'] == 'downloading':
@@ -551,6 +535,7 @@ def _execute_ydl(self, ydl_opts, url, is_mp3, safe_title=None):
                 self.log_label.text = '\n'.join(lines)
             else:
                 self.log(f"[*] Progreso: {percent} | Vel: {speed}")
+
 
 class MyLogger(object):
     def __init__(self, app): self.app = app
